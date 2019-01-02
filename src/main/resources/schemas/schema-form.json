@@ -2,9 +2,51 @@
   "type": "object",
   "title": "github",
   "properties": {
+    "githubUrl": {
+      "title": "GitHub URL",
+      "type": "string",
+      "default": "https://api.github.com"
+    },
+    "useSystemProxy": {
+      "title": "Use system proxy",
+      "description": "Use the system proxy configured by your administrator.",
+      "type": "boolean"
+    },
+    "owner": {
+      "title": "Repository Owner",
+      "description": "Owner of the repository",
+      "type": "string"
+    },
+    "repository": {
+      "title": "Repository",
+      "type": "string"
+    },
+    "branchOrTag": {
+      "title": "Ref",
+      "description": "Branch name, tag or sha1 (e.g. master). If empty, we use the default branch.",
+      "type": "string"
+    },
+    "filepath": {
+      "title": "Filepath",
+      "description": "The path to the file to fetch (e.g. /docs/main/README.md)",
+      "type": "string"
+    },
+    "username": {
+      "title": "Username",
+      "description": "Username used to authenticate the request",
+      "type": "string"
+    },
+    "personalAccessToken": {
+      "title": "Personal Access Token",
+      "description": "Create your personal access token here: https://github.com/settings/tokens",
+      "type": "string"
+    }
   },
   "required": [
-
+    "githubUrl",
+    "owner",
+    "repository",
+    "filepath"
   ]
 }
 

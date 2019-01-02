@@ -22,4 +22,77 @@ import io.gravitee.fetcher.api.FetcherConfiguration;
  * @author GraviteeSource Team
  */
 public class GitHubFetcherConfiguration implements FetcherConfiguration {
+    private String githubUrl;
+    private boolean useSystemProxy;
+    private String owner;
+    private String repository;
+    private String branchOrTag;
+    private String filepath = "/path/to/file";
+    private String username;
+    private String personalAccessToken;
+
+
+    public String getGithubUrl() {
+        return githubUrl;
+    }
+
+    public void setGithubUrl(String githubUrl) {
+        this.githubUrl = githubUrl;
+    }
+
+    public boolean isUseSystemProxy() {
+        return useSystemProxy;
+    }
+
+    public void setUseSystemProxy(boolean useSystemProxy) {
+        this.useSystemProxy = useSystemProxy;
+    }
+
+    public String getOwner() {
+        return owner;
+    }
+
+    public void setOwner(String owner) {
+        this.owner = owner;
+    }
+
+    public String getRepository() {
+        return repository;
+    }
+
+    public void setRepository(String repository) {
+        this.repository = repository;
+    }
+
+    public String getBranchOrTag() {
+        return branchOrTag;
+    }
+
+    public void setBranchOrTag(String branchOrTag) {
+        this.branchOrTag = branchOrTag;
+    }
+
+    public String getFilepath() {
+        return filepath;
+    }
+
+    public void setFilepath(String filepath) {
+        this.filepath = filepath;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getPersonalAccessToken() {
+        return personalAccessToken;
+    }
+
+    public void setPersonalAccessToken(String personalAccessToken) {
+        this.personalAccessToken = personalAccessToken;
+    }
 }
