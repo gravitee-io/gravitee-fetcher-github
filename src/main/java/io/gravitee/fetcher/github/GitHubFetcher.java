@@ -18,6 +18,7 @@ package io.gravitee.fetcher.github;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.gravitee.common.http.HttpStatusCode;
+import io.gravitee.fetcher.api.Resource;
 import io.gravitee.fetcher.api.Fetcher;
 import io.gravitee.fetcher.api.FetcherException;
 import io.gravitee.fetcher.github.vertx.VertxCompletableFuture;
@@ -34,9 +35,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.net.URI;
 import java.util.Base64;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -52,6 +53,9 @@ public class GitHubFetcher implements Fetcher {
 
     @Autowired
     private Vertx vertx;
+    @Autowired
+    private ObjectMapper mapper;
+
     @Value("${httpClient.timeout:10000}")
     private int httpClientTimeout;
     @Value("${httpClient.proxy.type:HTTP}")
@@ -80,37 +84,44 @@ public class GitHubFetcher implements Fetcher {
     }
 
     @Override
-    public InputStream fetch() throws FetcherException {
+    public Resource fetch() throws FetcherException {
+        checkRequiredFields();
+        try {
+            Buffer buffer = fetchContent().join();
+            final Resource resource = new Resource();
+            if (buffer == null || buffer.length() == 0) {
+                logger.warn("Something goes wrong, GitHub responds with a status 200 but the content is empty.");
+            } else {
+                JsonNode jsonNode = mapper.readTree(buffer.getBytes());
+                if (jsonNode != null) {
+                    final Map<String, Object> metadata = mapper.convertValue(jsonNode, Map.class);
+                    final Object content = metadata.remove("content");
+                    if (content != null) {
+                        final String contentAsBase64 = String.valueOf(content).replaceAll("\\n","");
+                        byte[] decodedContent = Base64.getDecoder().decode(contentAsBase64);
+                        resource.setContent(new ByteArrayInputStream(decodedContent));
+                    }
+                    final Object htmlUrl = metadata.get("html_url");
+                    if (htmlUrl != null) {
+                        metadata.put(EDIT_URL_PROPERTY_KEY, String.valueOf(htmlUrl).replace("blob", "edit"));
+                    }
+                    metadata.put(PROVIDER_NAME_PROPERTY_KEY, "GitHub");
+                    resource.setMetadata(metadata);
+                }
+            }
+            return resource;
+        } catch (Exception ex) {
+            logger.error(ex.getMessage(), ex);
+            throw new FetcherException("Unable to fetch GitHub content (" + ex.getMessage() + ")", ex);
+        }
+    }
+
+    private void checkRequiredFields() throws FetcherException {
         if (gitHubFetcherConfiguration.getGithubUrl() == null || gitHubFetcherConfiguration.getGithubUrl().isEmpty()
         || gitHubFetcherConfiguration.getOwner() == null      || gitHubFetcherConfiguration.getOwner().isEmpty()
         || gitHubFetcherConfiguration.getRepository() == null || gitHubFetcherConfiguration.getRepository().isEmpty()
         || gitHubFetcherConfiguration.getFilepath() == null   || gitHubFetcherConfiguration.getFilepath().isEmpty()) {
             throw new FetcherException("Some required configuration attributes are missing.", null);
-        }
-
-        try {
-            Buffer buffer = fetchContent().join();
-            if (buffer == null || buffer.length() == 0) {
-                logger.warn("Something goes wrong, GitHub responds with a status 200 but the content is empty.");
-                return null;
-            }
-
-            JsonNode jsonNode = new ObjectMapper().readTree(buffer.getBytes());
-            if (jsonNode != null) {
-                JsonNode content = jsonNode.get("content");
-                if (content != null) {
-                    String contentAsBase64 = content.asText().replaceAll("\\n","");
-                    byte[] decodedContent = Base64.getDecoder().decode(contentAsBase64);
-                    return new ByteArrayInputStream(decodedContent);
-                }
-
-                return null;
-            }
-
-            return new ByteArrayInputStream(buffer.getBytes());
-        } catch (Exception ex) {
-            logger.error(ex.getMessage(), ex);
-            throw new FetcherException("Unable to fetch GitHub content (" + ex.getMessage() + ")", ex);
         }
     }
 
@@ -263,8 +274,5 @@ public class GitHubFetcher implements Fetcher {
         }
 
         return future;
-    }
-    public void setVertx(Vertx vertx) {
-        this.vertx = vertx;
     }
 }

@@ -30,6 +30,7 @@ public class GitHubFetcherConfiguration implements FetcherConfiguration {
     private String filepath = "/path/to/file";
     private String username;
     private String personalAccessToken;
+    private String editLink;
 
 
     public String getGithubUrl() {
@@ -94,5 +95,13 @@ public class GitHubFetcherConfiguration implements FetcherConfiguration {
 
     public void setPersonalAccessToken(String personalAccessToken) {
         this.personalAccessToken = personalAccessToken;
+    }
+
+    public String getEditLink() {
+        return editLink;
+    }
+
+    public void setEditLink(String editLink) {
+        this.editLink = editLink;
     }
 }

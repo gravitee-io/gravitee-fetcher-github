@@ -15,9 +15,11 @@
  */
 package io.gravitee.fetcher.github;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import io.gravitee.fetcher.api.FetcherException;
 import io.vertx.core.Vertx;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -27,7 +29,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
-import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -41,6 +42,17 @@ public class GitHubFetcherTest {
     @Rule
     public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
 
+    private GitHubFetcher fetcher = new GitHubFetcher(null);
+
+    private Vertx vertx = Vertx.vertx();
+    private ObjectMapper mapper = new ObjectMapper();
+
+    @Before
+    public void init() {
+        ReflectionTestUtils.setField(fetcher, "vertx", vertx);
+        ReflectionTestUtils.setField(fetcher, "mapper", mapper);
+    }
+
     @Test
     public void shouldNotFetchWithoutContent() throws FetcherException {
         stubFor(get(urlEqualTo("/repos/owner/myrepo/contents/path/to/file?ref=sha1"))
@@ -53,11 +65,10 @@ public class GitHubFetcherTest {
         config.setFilepath("/path/to/file");
         config.setGithubUrl("http://localhost:" + wireMockRule.port());
         config.setBranchOrTag("sha1");
-        GitHubFetcher fetcher = new GitHubFetcher(config);
+        ReflectionTestUtils.setField(fetcher, "gitHubFetcherConfiguration", config);
         ReflectionTestUtils.setField(fetcher, "httpClientTimeout", 1_000);
-        fetcher.setVertx(Vertx.vertx());
 
-        InputStream fetch = fetcher.fetch();
+        InputStream fetch = fetcher.fetch().getContent();
 
         assertThat(fetch).isNull();
     }
@@ -73,11 +84,10 @@ public class GitHubFetcherTest {
         config.setFilepath("/path/to/file");
         config.setGithubUrl("http://localhost:" + wireMockRule.port());
         config.setBranchOrTag("sha1");
-        GitHubFetcher fetcher = new GitHubFetcher(config);
+        ReflectionTestUtils.setField(fetcher, "gitHubFetcherConfiguration", config);
         ReflectionTestUtils.setField(fetcher, "httpClientTimeout", 1_000);
-        fetcher.setVertx(Vertx.vertx());
 
-        InputStream fetch = fetcher.fetch();
+        InputStream fetch = fetcher.fetch().getContent();
         assertThat(fetch).isNull();
     }
 
@@ -93,8 +103,7 @@ public class GitHubFetcherTest {
         config.setFilepath("/path/to/file");
         config.setGithubUrl("http://localhost:" + wireMockRule.port());
         config.setBranchOrTag("sha1");
-        GitHubFetcher fetcher = new GitHubFetcher(config);
-        fetcher.setVertx(Vertx.vertx());
+        ReflectionTestUtils.setField(fetcher, "gitHubFetcherConfiguration", config);
 
         fetcher.fetch();
 
@@ -116,11 +125,10 @@ public class GitHubFetcherTest {
         config.setFilepath("/path/to/file");
         config.setGithubUrl("http://localhost:" + wireMockRule.port());
         config.setBranchOrTag("sha1");
-        GitHubFetcher fetcher = new GitHubFetcher(config);
+        ReflectionTestUtils.setField(fetcher, "gitHubFetcherConfiguration", config);
         ReflectionTestUtils.setField(fetcher, "httpClientTimeout", 1_000);
-        fetcher.setVertx(Vertx.vertx());
 
-        InputStream fetch = fetcher.fetch();
+        InputStream fetch = fetcher.fetch().getContent();
 
         assertThat(fetch).isNotNull();
         int n = fetch.available();
@@ -144,8 +152,7 @@ public class GitHubFetcherTest {
         config.setFilepath("/path/to/file");
         config.setGithubUrl("http://localhost:" + wireMockRule.port());
         config.setBranchOrTag("sha1");
-        GitHubFetcher fetcher = new GitHubFetcher(config);
-        fetcher.setVertx(Vertx.vertx());
+        ReflectionTestUtils.setField(fetcher, "gitHubFetcherConfiguration", config);
 
         try {
             fetcher.fetch();
