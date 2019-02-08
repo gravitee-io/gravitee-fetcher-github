@@ -16,12 +16,13 @@
 package io.gravitee.fetcher.github;
 
 import io.gravitee.fetcher.api.FetcherConfiguration;
+import io.gravitee.fetcher.api.FilepathAwareFetcherConfiguration;
 
 /**
  * @author Nicolas GERAUD (nicolas.geraud at graviteesource.com) 
  * @author GraviteeSource Team
  */
-public class GitHubFetcherConfiguration implements FetcherConfiguration {
+public class GitHubFetcherConfiguration implements FetcherConfiguration, FilepathAwareFetcherConfiguration {
     private String githubUrl;
     private boolean useSystemProxy;
     private String owner;
@@ -73,10 +74,12 @@ public class GitHubFetcherConfiguration implements FetcherConfiguration {
         this.branchOrTag = branchOrTag;
     }
 
+    @Override
     public String getFilepath() {
         return filepath;
     }
 
+    @Override
     public void setFilepath(String filepath) {
         this.filepath = filepath;
     }

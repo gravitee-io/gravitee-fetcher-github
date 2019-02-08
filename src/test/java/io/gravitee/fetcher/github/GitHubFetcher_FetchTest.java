@@ -37,7 +37,7 @@ import static org.assertj.core.api.Assertions.fail;
  * @author Nicolas GERAUD (nicolas.geraud at graviteesource.com) 
  * @author GraviteeSource Team
  */
-public class GitHubFetcherTest {
+public class GitHubFetcher_FetchTest {
 
     @Rule
     public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
