@@ -45,8 +45,7 @@
   "required": [
     "githubUrl",
     "owner",
-    "repository",
-    "filepath"
+    "repository"
   ]
 }
 
