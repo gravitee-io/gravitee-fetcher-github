@@ -67,7 +67,7 @@ public class GitHubFetcher_FetchTest {
         config.setGithubUrl(wireMockRule.baseUrl());
         config.setBranchOrTag("sha1");
         ReflectionTestUtils.setField(fetcher, "gitHubFetcherConfiguration", config);
-        ReflectionTestUtils.setField(fetcher, "httpClientTimeout", 1_000);
+        ReflectionTestUtils.setField(fetcher, "httpClientTimeout", 10_000);
 
         InputStream fetch = fetcher.fetch().getContent();
 
@@ -86,7 +86,7 @@ public class GitHubFetcher_FetchTest {
         config.setGithubUrl(wireMockRule.baseUrl());
         config.setBranchOrTag("sha1");
         ReflectionTestUtils.setField(fetcher, "gitHubFetcherConfiguration", config);
-        ReflectionTestUtils.setField(fetcher, "httpClientTimeout", 1_000);
+        ReflectionTestUtils.setField(fetcher, "httpClientTimeout", 10_000);
 
         InputStream fetch = fetcher.fetch().getContent();
         assertThat(fetch).isNull();
@@ -127,7 +127,7 @@ public class GitHubFetcher_FetchTest {
         config.setGithubUrl(wireMockRule.baseUrl());
         config.setBranchOrTag("sha1");
         ReflectionTestUtils.setField(fetcher, "gitHubFetcherConfiguration", config);
-        ReflectionTestUtils.setField(fetcher, "httpClientTimeout", 1_000);
+        ReflectionTestUtils.setField(fetcher, "httpClientTimeout", 10_000);
 
         InputStream fetch = fetcher.fetch().getContent();
 

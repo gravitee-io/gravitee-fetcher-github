@@ -55,7 +55,7 @@ public class GitHubFetcher_TreeTest {
         config.setGithubUrl("http://localhost:" + wireMockRule.port());
         config.setBranchOrTag("sha1");
         GitHubFetcher fetcher = new GitHubFetcher(config);
-        ReflectionTestUtils.setField(fetcher, "httpClientTimeout", 1_000);
+        ReflectionTestUtils.setField(fetcher, "httpClientTimeout", 10_000);
         fetcher.setVertx(Vertx.vertx());
 
         String[] tree = fetcher.files();
@@ -75,7 +75,7 @@ public class GitHubFetcher_TreeTest {
         config.setGithubUrl("http://localhost:" + wireMockRule.port());
         config.setBranchOrTag("sha1");
         GitHubFetcher fetcher = new GitHubFetcher(config);
-        ReflectionTestUtils.setField(fetcher, "httpClientTimeout", 1_000);
+        ReflectionTestUtils.setField(fetcher, "httpClientTimeout", 10_000);
         fetcher.setVertx(Vertx.vertx());
 
         String[] tree = fetcher.files();
@@ -96,7 +96,7 @@ public class GitHubFetcher_TreeTest {
         config.setGithubUrl("http://localhost:" + wireMockRule.port());
         config.setBranchOrTag("sha1");
         GitHubFetcher fetcher = new GitHubFetcher(config);
-        ReflectionTestUtils.setField(fetcher, "httpClientTimeout", 1_000);
+        ReflectionTestUtils.setField(fetcher, "httpClientTimeout", 10_000);
         fetcher.setVertx(Vertx.vertx());
 
         String[] tree = fetcher.files();
@@ -124,7 +124,7 @@ public class GitHubFetcher_TreeTest {
         config.setGithubUrl("http://localhost:" + wireMockRule.port());
         config.setBranchOrTag("sha1");
         GitHubFetcher fetcher = new GitHubFetcher(config);
-        ReflectionTestUtils.setField(fetcher, "httpClientTimeout", 1_000);
+        ReflectionTestUtils.setField(fetcher, "httpClientTimeout", 10_000);
         fetcher.setVertx(Vertx.vertx());
 
         String[] tree = fetcher.files();
