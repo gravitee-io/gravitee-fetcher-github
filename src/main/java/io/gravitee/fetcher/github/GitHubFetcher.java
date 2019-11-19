@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import io.gravitee.common.http.HttpStatusCode;
+import io.gravitee.common.utils.UUID;
 import io.gravitee.fetcher.api.*;
 import io.gravitee.fetcher.github.vertx.VertxCompletableFuture;
 import io.vertx.core.Future;
@@ -294,6 +295,7 @@ public class GitHubFetcher implements FilesFetcher {
 
             request.putHeader("Accept", VERSION_HEADER);
             request.putHeader("User-Agent", gitHubFetcherConfiguration.getOwner());
+            request.putHeader("X-Gravitee-Request-Id", io.gravitee.common.utils.UUID.toString(UUID.random()));
 
             if (gitHubFetcherConfiguration.getUsername() != null && !gitHubFetcherConfiguration.getUsername().trim().isEmpty()
             && gitHubFetcherConfiguration.getPersonalAccessToken() != null && !gitHubFetcherConfiguration.getPersonalAccessToken().trim().isEmpty()) {
