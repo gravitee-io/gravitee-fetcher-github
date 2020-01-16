@@ -17,6 +17,7 @@ package io.gravitee.fetcher.github;
 
 import io.gravitee.fetcher.api.FetcherConfiguration;
 import io.gravitee.fetcher.api.FilepathAwareFetcherConfiguration;
+import io.gravitee.fetcher.api.Sensitive;
 
 /**
  * @author Nicolas GERAUD (nicolas.geraud at graviteesource.com) 
@@ -30,6 +31,7 @@ public class GitHubFetcherConfiguration implements FetcherConfiguration, Filepat
     private String branchOrTag;
     private String filepath = "/path/to/file";
     private String username;
+    @Sensitive
     private String personalAccessToken;
     private String editLink;
 

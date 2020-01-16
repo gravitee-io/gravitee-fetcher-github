@@ -83,7 +83,7 @@ public class GitHubFetcher implements FilesFetcher {
     }
 
     @Override
-    public FilepathAwareFetcherConfiguration getConfiguration() {
+    public FetcherConfiguration getConfiguration() {
         return this.gitHubFetcherConfiguration;
     }
 
