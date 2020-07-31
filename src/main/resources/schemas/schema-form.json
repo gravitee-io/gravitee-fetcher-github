@@ -40,13 +40,30 @@
       "title": "Personal Access Token",
       "description": "Create your personal access token here: https://github.com/settings/tokens",
       "type": "string"
+    },
+    "autoFetch": {
+      "title": "Auto Fetch",
+      "description": "Trigger periodic update",
+      "type": "boolean",
+      "default": false
+    },
+    "fetchCron": {
+      "title": "Update frequency",
+      "description": "Define update frequency using Crontab pattern.<BR><B>Note:</B> Platform administrator may have configure a max frequency that you cannot exceed",
+      "type": "string"
     }
   },
   "required": [
     "githubUrl",
     "owner",
     "repository"
-  ]
+  ],
+  "if": {
+    "properties": {
+      "autoFetch": { "const": true }
+    }
+  },
+  "then": { "required": ["fetchCron"] }
 }
 
 

@@ -33,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.support.CronSequenceGenerator;
 
 import java.io.ByteArrayInputStream;
 import java.net.URI;
@@ -153,8 +154,17 @@ public class GitHubFetcher implements FilesFetcher {
         if (gitHubFetcherConfiguration.getGithubUrl() == null || gitHubFetcherConfiguration.getGithubUrl().isEmpty()
         || gitHubFetcherConfiguration.getOwner() == null      || gitHubFetcherConfiguration.getOwner().isEmpty()
         || gitHubFetcherConfiguration.getRepository() == null || gitHubFetcherConfiguration.getRepository().isEmpty()
+        || (gitHubFetcherConfiguration.isAutoFetch() && (gitHubFetcherConfiguration.getFetchCron() == null || gitHubFetcherConfiguration.getFetchCron().isEmpty()))
         || (checkFilepath && (gitHubFetcherConfiguration.getFilepath() == null || gitHubFetcherConfiguration.getFilepath().isEmpty()))) {
             throw new FetcherException("Some required configuration attributes are missing.", null);
+        }
+
+        if (gitHubFetcherConfiguration.isAutoFetch() && gitHubFetcherConfiguration.getFetchCron() != null) {
+            try {
+                new CronSequenceGenerator(gitHubFetcherConfiguration.getFetchCron());
+            } catch (IllegalArgumentException e) {
+                throw new FetcherException("Cron expression is invalid", e);
+            }
         }
     }
 

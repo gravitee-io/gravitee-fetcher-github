@@ -35,6 +35,9 @@ public class GitHubFetcherConfiguration implements FetcherConfiguration, Filepat
     private String personalAccessToken;
     private String editLink;
 
+    private String fetchCron;
+
+    private boolean autoFetch = false;
 
     public String getGithubUrl() {
         return githubUrl;
@@ -108,5 +111,23 @@ public class GitHubFetcherConfiguration implements FetcherConfiguration, Filepat
 
     public void setEditLink(String editLink) {
         this.editLink = editLink;
+    }
+
+    @Override
+    public String getFetchCron() {
+        return fetchCron;
+    }
+
+    public void setFetchCron(String fetchCron) {
+        this.fetchCron = fetchCron;
+    }
+
+    @Override
+    public boolean isAutoFetch() {
+        return autoFetch;
+    }
+
+    public void setAutoFetch(boolean autoFetch) {
+        this.autoFetch = autoFetch;
     }
 }
