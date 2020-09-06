@@ -313,6 +313,9 @@ public class GitHubFetcher implements FilesFetcher {
                     });
                 } else {
                     future.completeExceptionally(new FetcherException("Unable to fetch '" + url + "'. Status code: " + response.statusCode() + ". Message: " + response.statusMessage(), null));
+
+                    // Close client
+                    httpClient.close();
                 }
             });
 
