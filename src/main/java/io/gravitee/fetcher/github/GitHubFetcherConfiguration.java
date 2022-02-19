@@ -20,10 +20,11 @@ import io.gravitee.fetcher.api.FilepathAwareFetcherConfiguration;
 import io.gravitee.fetcher.api.Sensitive;
 
 /**
- * @author Nicolas GERAUD (nicolas.geraud at graviteesource.com) 
+ * @author Nicolas GERAUD (nicolas.geraud at graviteesource.com)
  * @author GraviteeSource Team
  */
 public class GitHubFetcherConfiguration implements FetcherConfiguration, FilepathAwareFetcherConfiguration {
+
     private String githubUrl;
     private boolean useSystemProxy;
     private String owner;
@@ -31,8 +32,10 @@ public class GitHubFetcherConfiguration implements FetcherConfiguration, Filepat
     private String branchOrTag;
     private String filepath = "/path/to/file";
     private String username;
+
     @Sensitive
     private String personalAccessToken;
+
     private String editLink;
 
     private String fetchCron;

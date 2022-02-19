@@ -15,27 +15,26 @@
  */
 package io.gravitee.fetcher.github;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import io.gravitee.fetcher.api.FetcherException;
 import io.vertx.core.Vertx;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-
-import static com.github.tomakehurst.wiremock.client.WireMock.*;
-import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
-
 /**
- * @author Nicolas GERAUD (nicolas.geraud at graviteesource.com) 
+ * @author Nicolas GERAUD (nicolas.geraud at graviteesource.com)
  * @author GraviteeSource Team
  */
 public class GitHubFetcher_FetchTest {
@@ -56,10 +55,10 @@ public class GitHubFetcher_FetchTest {
 
     @Test
     public void shouldNotFetchWithoutContent() throws FetcherException {
-        stubFor(get(urlEqualTo("/repos/owner/myrepo/contents/path/to/file?ref=sha1"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withBody("{\"key\": \"value\"}")));
+        stubFor(
+            get(urlEqualTo("/repos/owner/myrepo/contents/path/to/file?ref=sha1"))
+                .willReturn(aResponse().withStatus(200).withBody("{\"key\": \"value\"}"))
+        );
         GitHubFetcherConfiguration config = new GitHubFetcherConfiguration();
         config.setOwner("owner");
         config.setRepository("myrepo");
@@ -76,9 +75,7 @@ public class GitHubFetcher_FetchTest {
 
     @Test
     public void shouldNotFetchEmptyBody() throws Exception {
-        stubFor(get(urlEqualTo("/repos/owner/myrepo/contents/path/to/file?ref=sha1"))
-                .willReturn(aResponse()
-                        .withStatus(200)));
+        stubFor(get(urlEqualTo("/repos/owner/myrepo/contents/path/to/file?ref=sha1")).willReturn(aResponse().withStatus(200)));
         GitHubFetcherConfiguration config = new GitHubFetcherConfiguration();
         config.setOwner("owner");
         config.setRepository("myrepo");
@@ -94,10 +91,10 @@ public class GitHubFetcher_FetchTest {
 
     @Test(expected = Exception.class)
     public void shouldThrowExceptionIfContentNotBase64() throws Exception {
-        stubFor(get(urlEqualTo("/repos/owner/myrepo/contents/path/to/file?ref=sha1"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withBody("{\"content\": \"not base64 content\"}")));
+        stubFor(
+            get(urlEqualTo("/repos/owner/myrepo/contents/path/to/file?ref=sha1"))
+                .willReturn(aResponse().withStatus(200).withBody("{\"content\": \"not base64 content\"}"))
+        );
         GitHubFetcherConfiguration config = new GitHubFetcherConfiguration();
         config.setOwner("owner");
         config.setRepository("myrepo");
@@ -116,10 +113,10 @@ public class GitHubFetcher_FetchTest {
         String content = "Gravitee.io is awesome!";
         String encoded = Base64.getEncoder().encodeToString(content.getBytes());
 
-        stubFor(get(urlEqualTo("/repos/owner/myrepo/contents/path/to/file?ref=sha1"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withBody("{\"content\": \""+encoded+"\"}")));
+        stubFor(
+            get(urlEqualTo("/repos/owner/myrepo/contents/path/to/file?ref=sha1"))
+                .willReturn(aResponse().withStatus(200).withBody("{\"content\": \"" + encoded + "\"}"))
+        );
         GitHubFetcherConfiguration config = new GitHubFetcherConfiguration();
         config.setOwner("owner");
         config.setRepository("myrepo");
@@ -141,12 +138,10 @@ public class GitHubFetcher_FetchTest {
 
     @Test(expected = FetcherException.class)
     public void shouldThrowExceptionWhenStatusNot200() throws Exception {
-        stubFor(get(urlEqualTo("/repos/owner/myrepo/contents/path/to/file?ref=sha1"))
-                .willReturn(aResponse()
-                        .withStatus(401)
-                        .withBody("{\n" +
-                                "  \"message\": \"401 Unauthorized\"\n" +
-                                "}")));
+        stubFor(
+            get(urlEqualTo("/repos/owner/myrepo/contents/path/to/file?ref=sha1"))
+                .willReturn(aResponse().withStatus(401).withBody("{\n" + "  \"message\": \"401 Unauthorized\"\n" + "}"))
+        );
         GitHubFetcherConfiguration config = new GitHubFetcherConfiguration();
         config.setOwner("owner");
         config.setRepository("myrepo");
