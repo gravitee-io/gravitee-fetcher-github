@@ -31,19 +31,18 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.*;
 import io.vertx.core.net.ProxyOptions;
 import io.vertx.core.net.ProxyType;
+import java.io.ByteArrayInputStream;
+import java.net.URI;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.support.CronSequenceGenerator;
 
-import java.io.ByteArrayInputStream;
-import java.net.URI;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-
 /**
- * @author Nicolas GERAUD (nicolas.geraud at graviteesource.com) 
+ * @author Nicolas GERAUD (nicolas.geraud at graviteesource.com)
  * @author GraviteeSource Team
  */
 public class GitHubFetcher implements FilesFetcher {
@@ -55,29 +54,37 @@ public class GitHubFetcher implements FilesFetcher {
 
     @Autowired
     private Vertx vertx;
+
     @Autowired
     private ObjectMapper mapper;
 
     @Value("${httpClient.timeout:10000}")
     private int httpClientTimeout;
+
     @Value("${httpClient.proxy.type:HTTP}")
     private String httpClientProxyType;
 
     @Value("${httpClient.proxy.http.host:#{systemProperties['http.proxyHost'] ?: 'localhost'}}")
     private String httpClientProxyHttpHost;
+
     @Value("${httpClient.proxy.http.port:#{systemProperties['http.proxyPort'] ?: 3128}}")
     private int httpClientProxyHttpPort;
+
     @Value("${httpClient.proxy.http.username:#{null}}")
     private String httpClientProxyHttpUsername;
+
     @Value("${httpClient.proxy.http.password:#{null}}")
     private String httpClientProxyHttpPassword;
 
     @Value("${httpClient.proxy.https.host:#{systemProperties['https.proxyHost'] ?: 'localhost'}}")
     private String httpClientProxyHttpsHost;
+
     @Value("${httpClient.proxy.https.port:#{systemProperties['https.proxyPort'] ?: 3128}}")
     private int httpClientProxyHttpsPort;
+
     @Value("${httpClient.proxy.https.username:#{null}}")
     private String httpClientProxyHttpsUsername;
+
     @Value("${httpClient.proxy.https.password:#{null}}")
     private String httpClientProxyHttpsPassword;
 
@@ -100,7 +107,7 @@ public class GitHubFetcher implements FilesFetcher {
             final Map<String, Object> metadata = mapper.convertValue(jsonNode, Map.class);
             final Object content = metadata.remove("content");
             if (content != null) {
-                final String contentAsBase64 = String.valueOf(content).replaceAll("\\n","");
+                final String contentAsBase64 = String.valueOf(content).replaceAll("\\n", "");
                 byte[] decodedContent = Base64.getDecoder().decode(contentAsBase64);
                 resource.setContent(new ByteArrayInputStream(decodedContent));
             }
@@ -153,11 +160,19 @@ public class GitHubFetcher implements FilesFetcher {
     }
 
     private void checkRequiredFields(boolean checkFilepath) throws FetcherException {
-        if (gitHubFetcherConfiguration.getGithubUrl() == null || gitHubFetcherConfiguration.getGithubUrl().isEmpty()
-        || gitHubFetcherConfiguration.getOwner() == null      || gitHubFetcherConfiguration.getOwner().isEmpty()
-        || gitHubFetcherConfiguration.getRepository() == null || gitHubFetcherConfiguration.getRepository().isEmpty()
-        || (gitHubFetcherConfiguration.isAutoFetch() && (gitHubFetcherConfiguration.getFetchCron() == null || gitHubFetcherConfiguration.getFetchCron().isEmpty()))
-        || (checkFilepath && (gitHubFetcherConfiguration.getFilepath() == null || gitHubFetcherConfiguration.getFilepath().isEmpty()))) {
+        if (
+            gitHubFetcherConfiguration.getGithubUrl() == null ||
+            gitHubFetcherConfiguration.getGithubUrl().isEmpty() ||
+            gitHubFetcherConfiguration.getOwner() == null ||
+            gitHubFetcherConfiguration.getOwner().isEmpty() ||
+            gitHubFetcherConfiguration.getRepository() == null ||
+            gitHubFetcherConfiguration.getRepository().isEmpty() ||
+            (
+                gitHubFetcherConfiguration.isAutoFetch() &&
+                (gitHubFetcherConfiguration.getFetchCron() == null || gitHubFetcherConfiguration.getFetchCron().isEmpty())
+            ) ||
+            (checkFilepath && (gitHubFetcherConfiguration.getFilepath() == null || gitHubFetcherConfiguration.getFilepath().isEmpty()))
+        ) {
             throw new FetcherException("Some required configuration attributes are missing.", null);
         }
 
@@ -171,26 +186,39 @@ public class GitHubFetcher implements FilesFetcher {
     }
 
     private String getFetchUrl() {
-        return gitHubFetcherConfiguration.getGithubUrl()
-                + "/repos"
-                + "/" + gitHubFetcherConfiguration.getOwner()
-                + "/" + gitHubFetcherConfiguration.getRepository()
-                + "/contents"
-                + gitHubFetcherConfiguration.getFilepath()
-                + (gitHubFetcherConfiguration.getBranchOrTag() != null && !gitHubFetcherConfiguration.getBranchOrTag().isEmpty()
-                    ? ("?ref=" + gitHubFetcherConfiguration.getBranchOrTag()) : "");
+        return (
+            gitHubFetcherConfiguration.getGithubUrl() +
+            "/repos" +
+            "/" +
+            gitHubFetcherConfiguration.getOwner() +
+            "/" +
+            gitHubFetcherConfiguration.getRepository() +
+            "/contents" +
+            gitHubFetcherConfiguration.getFilepath() +
+            (
+                gitHubFetcherConfiguration.getBranchOrTag() != null && !gitHubFetcherConfiguration.getBranchOrTag().isEmpty()
+                    ? ("?ref=" + gitHubFetcherConfiguration.getBranchOrTag())
+                    : ""
+            )
+        );
     }
 
-
     private String getTreeUrl() {
-        return gitHubFetcherConfiguration.getGithubUrl()
-                + "/repos"
-                + "/" + gitHubFetcherConfiguration.getOwner()
-                + "/" + gitHubFetcherConfiguration.getRepository()
-                + "/git/trees/"
-                + (gitHubFetcherConfiguration.getBranchOrTag() != null && !gitHubFetcherConfiguration.getBranchOrTag().isEmpty()
-                ? (gitHubFetcherConfiguration.getBranchOrTag()) : "master")
-                + "?recursive=1";
+        return (
+            gitHubFetcherConfiguration.getGithubUrl() +
+            "/repos" +
+            "/" +
+            gitHubFetcherConfiguration.getOwner() +
+            "/" +
+            gitHubFetcherConfiguration.getRepository() +
+            "/git/trees/" +
+            (
+                gitHubFetcherConfiguration.getBranchOrTag() != null && !gitHubFetcherConfiguration.getBranchOrTag().isEmpty()
+                    ? (gitHubFetcherConfiguration.getBranchOrTag())
+                    : "master"
+            ) +
+            "?recursive=1"
+        );
     }
 
     private JsonNode request(String url) throws FetcherException {
@@ -215,12 +243,12 @@ public class GitHubFetcher implements FilesFetcher {
         boolean ssl = HTTPS_SCHEME.equalsIgnoreCase(requestUri.getScheme());
 
         final HttpClientOptions options = new HttpClientOptions()
-                .setSsl(ssl)
-                .setTrustAll(true)
-                .setMaxPoolSize(1)
-                .setKeepAlive(false)
-                .setTcpKeepAlive(false)
-                .setConnectTimeout(httpClientTimeout);
+            .setSsl(ssl)
+            .setTrustAll(true)
+            .setMaxPoolSize(1)
+            .setKeepAlive(false)
+            .setTcpKeepAlive(false)
+            .setConnectTimeout(httpClientTimeout);
 
         if (gitHubFetcherConfiguration.isUseSystemProxy()) {
             ProxyOptions proxyOptions = new ProxyOptions();
@@ -240,30 +268,35 @@ public class GitHubFetcher implements FilesFetcher {
         }
 
         final HttpClient httpClient = vertx.createHttpClient(options);
-        final int port = requestUri.getPort() != -1 ? requestUri.getPort() :
-                (HTTPS_SCHEME.equals(requestUri.getScheme()) ? 443 : 80);
+        final int port = requestUri.getPort() != -1 ? requestUri.getPort() : (HTTPS_SCHEME.equals(requestUri.getScheme()) ? 443 : 80);
 
         try {
             final RequestOptions reqOptions = new RequestOptions()
-                    .setMethod(HttpMethod.GET)
-                    .setPort(port)
-                    .setHost(requestUri.getHost())
-                    .setURI(requestUri.toString())
-                    .putHeader(io.gravitee.common.http.HttpHeaders.USER_AGENT, gitHubFetcherConfiguration.getOwner())
-                    .putHeader("X-Gravitee-Request-Id", UUID.toString(UUID.random()))
-                    .putHeader("Accept", VERSION_HEADER)
-                    .setTimeout(httpClientTimeout)
-                    // Follow redirect since Gitlab may return a 3xx status code
-                    .setFollowRedirects(true);
+                .setMethod(HttpMethod.GET)
+                .setPort(port)
+                .setHost(requestUri.getHost())
+                .setURI(requestUri.toString())
+                .putHeader(io.gravitee.common.http.HttpHeaders.USER_AGENT, gitHubFetcherConfiguration.getOwner())
+                .putHeader("X-Gravitee-Request-Id", UUID.toString(UUID.random()))
+                .putHeader("Accept", VERSION_HEADER)
+                .setTimeout(httpClientTimeout)
+                // Follow redirect since Gitlab may return a 3xx status code
+                .setFollowRedirects(true);
 
-            if (gitHubFetcherConfiguration.getUsername() != null && !gitHubFetcherConfiguration.getUsername().trim().isEmpty()
-            && gitHubFetcherConfiguration.getPersonalAccessToken() != null && !gitHubFetcherConfiguration.getPersonalAccessToken().trim().isEmpty()) {
+            if (
+                gitHubFetcherConfiguration.getUsername() != null &&
+                !gitHubFetcherConfiguration.getUsername().trim().isEmpty() &&
+                gitHubFetcherConfiguration.getPersonalAccessToken() != null &&
+                !gitHubFetcherConfiguration.getPersonalAccessToken().trim().isEmpty()
+            ) {
                 String auth = gitHubFetcherConfiguration.getUsername() + ":" + gitHubFetcherConfiguration.getPersonalAccessToken();
                 reqOptions.putHeader("Authorization", "Basic " + Base64.getEncoder().encodeToString(auth.getBytes()));
             }
 
-            httpClient.request(reqOptions)
-                    .onFailure(new Handler<Throwable>() {
+            httpClient
+                .request(reqOptions)
+                .onFailure(
+                    new Handler<Throwable>() {
                         @Override
                         public void handle(Throwable throwable) {
                             promise.fail(throwable);
@@ -271,8 +304,10 @@ public class GitHubFetcher implements FilesFetcher {
                             // Close client
                             httpClient.close();
                         }
-                    })
-                    .onSuccess(new Handler<HttpClientRequest>() {
+                    }
+                )
+                .onSuccess(
+                    new Handler<HttpClientRequest>() {
                         @Override
                         public void handle(HttpClientRequest request) {
                             request.response(asyncResponse -> {
@@ -291,7 +326,17 @@ public class GitHubFetcher implements FilesFetcher {
                                             httpClient.close();
                                         });
                                     } else {
-                                        promise.fail(new FetcherException("Unable to fetch '" + url + "'. Status code: " + response.statusCode() + ". Message: " + response.statusMessage(), null));
+                                        promise.fail(
+                                            new FetcherException(
+                                                "Unable to fetch '" +
+                                                url +
+                                                "'. Status code: " +
+                                                response.statusCode() +
+                                                ". Message: " +
+                                                response.statusMessage(),
+                                                null
+                                            )
+                                        );
 
                                         // Close client
                                         httpClient.close();
@@ -312,7 +357,8 @@ public class GitHubFetcher implements FilesFetcher {
 
                             request.end();
                         }
-                    });
+                    }
+                );
         } catch (Exception ex) {
             logger.error("Unable to fetch content using HTTP", ex);
             promise.fail(ex);
