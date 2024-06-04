@@ -18,11 +18,15 @@ package io.gravitee.fetcher.github;
 import io.gravitee.fetcher.api.FetcherConfiguration;
 import io.gravitee.fetcher.api.FilepathAwareFetcherConfiguration;
 import io.gravitee.fetcher.api.Sensitive;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * @author Nicolas GERAUD (nicolas.geraud at graviteesource.com)
  * @author GraviteeSource Team
  */
+@Getter
+@Setter
 public class GitHubFetcherConfiguration implements FetcherConfiguration, FilepathAwareFetcherConfiguration {
 
     private String githubUrl;
@@ -41,96 +45,4 @@ public class GitHubFetcherConfiguration implements FetcherConfiguration, Filepat
     private String fetchCron;
 
     private boolean autoFetch = false;
-
-    public String getGithubUrl() {
-        return githubUrl;
-    }
-
-    public void setGithubUrl(String githubUrl) {
-        this.githubUrl = githubUrl;
-    }
-
-    public boolean isUseSystemProxy() {
-        return useSystemProxy;
-    }
-
-    public void setUseSystemProxy(boolean useSystemProxy) {
-        this.useSystemProxy = useSystemProxy;
-    }
-
-    public String getOwner() {
-        return owner;
-    }
-
-    public void setOwner(String owner) {
-        this.owner = owner;
-    }
-
-    public String getRepository() {
-        return repository;
-    }
-
-    public void setRepository(String repository) {
-        this.repository = repository;
-    }
-
-    public String getBranchOrTag() {
-        return branchOrTag;
-    }
-
-    public void setBranchOrTag(String branchOrTag) {
-        this.branchOrTag = branchOrTag;
-    }
-
-    @Override
-    public String getFilepath() {
-        return filepath;
-    }
-
-    @Override
-    public void setFilepath(String filepath) {
-        this.filepath = filepath;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getPersonalAccessToken() {
-        return personalAccessToken;
-    }
-
-    public void setPersonalAccessToken(String personalAccessToken) {
-        this.personalAccessToken = personalAccessToken;
-    }
-
-    public String getEditLink() {
-        return editLink;
-    }
-
-    public void setEditLink(String editLink) {
-        this.editLink = editLink;
-    }
-
-    @Override
-    public String getFetchCron() {
-        return fetchCron;
-    }
-
-    public void setFetchCron(String fetchCron) {
-        this.fetchCron = fetchCron;
-    }
-
-    @Override
-    public boolean isAutoFetch() {
-        return autoFetch;
-    }
-
-    public void setAutoFetch(boolean autoFetch) {
-        this.autoFetch = autoFetch;
-    }
 }
