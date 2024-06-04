@@ -18,36 +18,35 @@ package io.gravitee.fetcher.github;
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import io.gravitee.fetcher.api.FetcherException;
 import io.vertx.core.Vertx;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 /**
  * @author Nicolas GERAUD (nicolas.geraud at graviteesource.com)
  * @author GraviteeSource Team
  */
-public class GitHubFetcher_FetchTest {
+class GitHubFetcher_FetchTest {
 
-    @ClassRule
-    public static final WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
+    @RegisterExtension
+    static WireMockExtension wiremock = WireMockExtension.newInstance().options(wireMockConfig().dynamicPort()).build();
 
     private GitHubFetcher fetcher = new GitHubFetcher(null);
 
     private Vertx vertx = Vertx.vertx();
     private ObjectMapper mapper = new ObjectMapper();
 
-    @Before
+    @BeforeEach
     public void init() {
         ReflectionTestUtils.setField(fetcher, "vertx", vertx);
         ReflectionTestUtils.setField(fetcher, "mapper", mapper);
@@ -55,7 +54,7 @@ public class GitHubFetcher_FetchTest {
 
     @Test
     public void shouldNotFetchWithoutContent() throws FetcherException {
-        stubFor(
+        wiremock.stubFor(
             get(urlEqualTo("/repos/owner/myrepo/contents/path/to/file?ref=sha1"))
                 .willReturn(aResponse().withStatus(200).withBody("{\"key\": \"value\"}"))
         );
@@ -63,7 +62,7 @@ public class GitHubFetcher_FetchTest {
         config.setOwner("owner");
         config.setRepository("myrepo");
         config.setFilepath("/path/to/file");
-        config.setGithubUrl(wireMockRule.baseUrl());
+        config.setGithubUrl(wiremock.baseUrl());
         config.setBranchOrTag("sha1");
         ReflectionTestUtils.setField(fetcher, "gitHubFetcherConfiguration", config);
         ReflectionTestUtils.setField(fetcher, "httpClientTimeout", 10_000);
@@ -75,12 +74,12 @@ public class GitHubFetcher_FetchTest {
 
     @Test
     public void shouldNotFetchEmptyBody() throws Exception {
-        stubFor(get(urlEqualTo("/repos/owner/myrepo/contents/path/to/file?ref=sha1")).willReturn(aResponse().withStatus(200)));
+        wiremock.stubFor(get(urlEqualTo("/repos/owner/myrepo/contents/path/to/file?ref=sha1")).willReturn(aResponse().withStatus(200)));
         GitHubFetcherConfiguration config = new GitHubFetcherConfiguration();
         config.setOwner("owner");
         config.setRepository("myrepo");
         config.setFilepath("/path/to/file");
-        config.setGithubUrl(wireMockRule.baseUrl());
+        config.setGithubUrl(wiremock.baseUrl());
         config.setBranchOrTag("sha1");
         ReflectionTestUtils.setField(fetcher, "gitHubFetcherConfiguration", config);
         ReflectionTestUtils.setField(fetcher, "httpClientTimeout", 10_000);
@@ -89,9 +88,9 @@ public class GitHubFetcher_FetchTest {
         assertThat(fetch).isNull();
     }
 
-    @Test(expected = Exception.class)
+    @Test
     public void shouldThrowExceptionIfContentNotBase64() throws Exception {
-        stubFor(
+        wiremock.stubFor(
             get(urlEqualTo("/repos/owner/myrepo/contents/path/to/file?ref=sha1"))
                 .willReturn(aResponse().withStatus(200).withBody("{\"content\": \"not base64 content\"}"))
         );
@@ -99,13 +98,11 @@ public class GitHubFetcher_FetchTest {
         config.setOwner("owner");
         config.setRepository("myrepo");
         config.setFilepath("/path/to/file");
-        config.setGithubUrl(wireMockRule.baseUrl());
+        config.setGithubUrl(wiremock.baseUrl());
         config.setBranchOrTag("sha1");
         ReflectionTestUtils.setField(fetcher, "gitHubFetcherConfiguration", config);
 
-        fetcher.fetch();
-
-        fail("Decode non base64 content does not throw Exception");
+        assertThatThrownBy(fetcher::fetch).hasMessage("Illegal base64 character 20");
     }
 
     @Test
@@ -113,7 +110,7 @@ public class GitHubFetcher_FetchTest {
         String content = "Gravitee.io is awesome!";
         String encoded = Base64.getEncoder().encodeToString(content.getBytes());
 
-        stubFor(
+        wiremock.stubFor(
             get(urlEqualTo("/repos/owner/myrepo/contents/path/to/file?ref=sha1"))
                 .willReturn(aResponse().withStatus(200).withBody("{\"content\": \"" + encoded + "\"}"))
         );
@@ -121,7 +118,7 @@ public class GitHubFetcher_FetchTest {
         config.setOwner("owner");
         config.setRepository("myrepo");
         config.setFilepath("/path/to/file");
-        config.setGithubUrl(wireMockRule.baseUrl());
+        config.setGithubUrl(wiremock.baseUrl());
         config.setBranchOrTag("sha1");
         ReflectionTestUtils.setField(fetcher, "gitHubFetcherConfiguration", config);
         ReflectionTestUtils.setField(fetcher, "httpClientTimeout", 10_000);
@@ -136,9 +133,9 @@ public class GitHubFetcher_FetchTest {
         assertThat(decoded).isEqualTo(content);
     }
 
-    @Test(expected = FetcherException.class)
+    @Test
     public void shouldThrowExceptionWhenStatusNot200() throws Exception {
-        stubFor(
+        wiremock.stubFor(
             get(urlEqualTo("/repos/owner/myrepo/contents/path/to/file?ref=sha1"))
                 .willReturn(aResponse().withStatus(401).withBody("{\n" + "  \"message\": \"401 Unauthorized\"\n" + "}"))
         );
@@ -146,18 +143,13 @@ public class GitHubFetcher_FetchTest {
         config.setOwner("owner");
         config.setRepository("myrepo");
         config.setFilepath("/path/to/file");
-        config.setGithubUrl(wireMockRule.baseUrl());
+        config.setGithubUrl(wiremock.baseUrl());
         config.setBranchOrTag("sha1");
         ReflectionTestUtils.setField(fetcher, "gitHubFetcherConfiguration", config);
 
-        try {
-            fetcher.fetch();
-        } catch (FetcherException fe) {
-            assertThat(fe.getMessage().contains("Status code: 401"));
-            assertThat(fe.getMessage().contains("Message: 401 Unauthorized"));
-            throw fe;
-        }
-
-        fail("Fetch response with status code != 200 does not throw Exception");
+        assertThatThrownBy(fetcher::fetch)
+            .isInstanceOf(FetcherException.class)
+            .hasMessageContaining("Status code: 401")
+            .hasMessageContaining("Message: Unauthorized");
     }
 }

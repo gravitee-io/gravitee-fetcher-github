@@ -18,32 +18,27 @@ package io.gravitee.fetcher.github;
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import io.gravitee.fetcher.api.FetcherException;
 import io.vertx.core.Vertx;
-import java.util.Arrays;
-import java.util.List;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 /**
  * @author Nicolas GERAUD (nicolas.geraud at graviteesource.com)
  * @author GraviteeSource Team
  */
-public class GitHubFetcher_TreeTest {
+class GitHubFetcher_TreeTest {
 
-    @ClassRule
-    public static final WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
+    @RegisterExtension
+    static WireMockExtension wiremock = WireMockExtension.newInstance().options(wireMockConfig().dynamicPort()).build();
 
     @Test
     public void shouldNotTreeWithoutContent() throws FetcherException {
-        stubFor(
+        wiremock.stubFor(
             get(urlEqualTo("/repos/owner/myrepo/git/trees/sha1?recursive=1"))
                 .willReturn(aResponse().withStatus(200).withBody("{\"truncated\": \"false\"}"))
         );
@@ -51,7 +46,7 @@ public class GitHubFetcher_TreeTest {
         config.setOwner("owner");
         config.setRepository("myrepo");
         config.setFilepath("/path/to/file");
-        config.setGithubUrl("http://localhost:" + wireMockRule.port());
+        config.setGithubUrl("http://localhost:" + wiremock.getPort());
         config.setBranchOrTag("sha1");
         GitHubFetcher fetcher = new GitHubFetcher(config);
         ReflectionTestUtils.setField(fetcher, "httpClientTimeout", 10_000);
@@ -64,12 +59,12 @@ public class GitHubFetcher_TreeTest {
 
     @Test
     public void shouldNotTreeEmptyBody() throws Exception {
-        stubFor(get(urlEqualTo("/repos/owner/myrepo/git/trees/sha1?recursive=1")).willReturn(aResponse().withStatus(200)));
+        wiremock.stubFor(get(urlEqualTo("/repos/owner/myrepo/git/trees/sha1?recursive=1")).willReturn(aResponse().withStatus(200)));
         GitHubFetcherConfiguration config = new GitHubFetcherConfiguration();
         config.setOwner("owner");
         config.setRepository("myrepo");
         config.setFilepath("/path/to/file");
-        config.setGithubUrl("http://localhost:" + wireMockRule.port());
+        config.setGithubUrl("http://localhost:" + wiremock.getPort());
         config.setBranchOrTag("sha1");
         GitHubFetcher fetcher = new GitHubFetcher(config);
         ReflectionTestUtils.setField(fetcher, "httpClientTimeout", 10_000);
@@ -82,14 +77,14 @@ public class GitHubFetcher_TreeTest {
 
     @Test
     public void shouldTree() throws Exception {
-        stubFor(
+        wiremock.stubFor(
             get(urlEqualTo("/repos/owner/myrepo/git/trees/sha1?recursive=1")).willReturn(aResponse().withStatus(200).withBody(treeResponse))
         );
         GitHubFetcherConfiguration config = new GitHubFetcherConfiguration();
         config.setOwner("owner");
         config.setRepository("myrepo");
         config.setFilepath("/path/to/file");
-        config.setGithubUrl("http://localhost:" + wireMockRule.port());
+        config.setGithubUrl("http://localhost:" + wiremock.getPort());
         config.setBranchOrTag("sha1");
         GitHubFetcher fetcher = new GitHubFetcher(config);
         ReflectionTestUtils.setField(fetcher, "httpClientTimeout", 10_000);
@@ -98,25 +93,27 @@ public class GitHubFetcher_TreeTest {
         String[] tree = fetcher.files();
 
         assertThat(tree).isNotEmpty();
-        assertEquals("get 5 files", 5, tree.length);
-        List<String> asList = Arrays.asList(tree);
-        assertTrue("swagger.yml", asList.contains("/path/to/file/swagger.yml"));
-        assertTrue("doc.md", asList.contains("/path/to/file/doc.md"));
-        assertTrue("doc2.MD", asList.contains("/path/to/file/doc2.MD"));
-        assertTrue("doc2.MD", asList.contains("/path/to/file/doc2.UNKNOWN"));
-        assertTrue("subpath/doc.md", asList.contains("/path/to/file/subpath/doc.md"));
+        assertThat(tree).hasSize(5);
+        assertThat(tree)
+            .contains(
+                "/path/to/file/swagger.yml",
+                "/path/to/file/doc.md",
+                "/path/to/file/doc2.MD",
+                "/path/to/file/doc2.UNKNOWN",
+                "/path/to/file/subpath/doc.md"
+            );
     }
 
     @Test
     public void shouldTreeWithEmptyPath() throws Exception {
-        stubFor(
+        wiremock.stubFor(
             get(urlEqualTo("/repos/owner/myrepo/git/trees/sha1?recursive=1")).willReturn(aResponse().withStatus(200).withBody(treeResponse))
         );
         GitHubFetcherConfiguration config = new GitHubFetcherConfiguration();
         config.setOwner("owner");
         config.setRepository("myrepo");
         config.setFilepath(null);
-        config.setGithubUrl("http://localhost:" + wireMockRule.port());
+        config.setGithubUrl("http://localhost:" + wiremock.getPort());
         config.setBranchOrTag("sha1");
         GitHubFetcher fetcher = new GitHubFetcher(config);
         ReflectionTestUtils.setField(fetcher, "httpClientTimeout", 10_000);
@@ -125,20 +122,22 @@ public class GitHubFetcher_TreeTest {
         String[] tree = fetcher.files();
 
         assertThat(tree).isNotEmpty();
-        assertEquals("get 7 files", 7, tree.length);
-        List<String> asList = Arrays.asList(tree);
-        assertTrue("swagger.yml", asList.contains("/path/to/file/swagger.yml"));
-        assertTrue("doc.md", asList.contains("/path/to/file/doc.md"));
-        assertTrue("doc2.MD", asList.contains("/path/to/file/doc2.MD"));
-        assertTrue("doc2.MD", asList.contains("/path/to/file/doc2.UNKNOWN"));
-        assertTrue("subpath/doc.md", asList.contains("/path/to/file/subpath/doc.md"));
-        assertTrue("CONTRIBUTING.md", asList.contains("/CONTRIBUTING.md"));
-        assertTrue("path/not/to/file/doc.md", asList.contains("/path/not/to/file/doc.md"));
+        assertThat(tree).hasSize(7);
+        assertThat(tree)
+            .contains(
+                "/path/to/file/swagger.yml",
+                "/path/to/file/doc.md",
+                "/path/to/file/doc2.MD",
+                "/path/to/file/doc2.UNKNOWN",
+                "/path/to/file/subpath/doc.md",
+                "/CONTRIBUTING.md",
+                "/path/not/to/file/doc.md"
+            );
     }
 
-    @Test(expected = FetcherException.class)
+    @Test
     public void shouldThrowExceptionWhenStatusNot200() throws Exception {
-        stubFor(
+        wiremock.stubFor(
             get(urlEqualTo("/repos/owner/myrepo/git/trees/sha1?recursive=1"))
                 .willReturn(aResponse().withStatus(401).withBody("{\n" + "  \"message\": \"401 Unauthorized\"\n" + "}"))
         );
@@ -146,107 +145,101 @@ public class GitHubFetcher_TreeTest {
         config.setOwner("owner");
         config.setRepository("myrepo");
         config.setFilepath("/path/to/file");
-        config.setGithubUrl("http://localhost:" + wireMockRule.port());
+        config.setGithubUrl("http://localhost:" + wiremock.getPort());
         config.setBranchOrTag("sha1");
         GitHubFetcher fetcher = new GitHubFetcher(config);
         fetcher.setVertx(Vertx.vertx());
 
-        try {
-            fetcher.files();
-        } catch (FetcherException fe) {
-            assertThat(fe.getMessage().contains("Unable to fetch GitHub content (")).isTrue();
-            throw fe;
-        }
-
-        fail("Fetch response with status code != 200 does not throw Exception");
+        assertThatThrownBy(fetcher::files).isInstanceOf(FetcherException.class).hasMessageContaining("Unable to fetch GitHub content (");
     }
 
-    private String treeResponse =
-        "{\n" +
-        "    \"sha\": \"28bd3de3c32304841eb69d80079ffcc447f9ce6f\",\n" +
-        "    \"url\": \"https://api.github.com/repos/owner/myrepo/git/trees/28bd3de3c32304841eb69d80079ffcc447f9ce6f\",\n" +
-        "    \"tree\": [\n" +
-        "        {\n" +
-        "            \"path\": \".gitignore\",\n" +
-        "            \"mode\": \"100644\",\n" +
-        "            \"type\": \"blob\",\n" +
-        "            \"sha\": \"a05ec7b1a209b7bc47575bf2fea9b2b4396c0bc4\",\n" +
-        "            \"size\": 480,\n" +
-        "            \"url\": \"https://api.github.com/repos/owner/myrepo/git/blobs/a05ec7b1a209b7bc47575bf2fea9b2b4396c0bc4\"\n" +
-        "        },\n" +
-        "        {\n" +
-        "            \"path\": \"CONTRIBUTING.md\",\n" +
-        "            \"mode\": \"100644\",\n" +
-        "            \"type\": \"blob\",\n" +
-        "            \"sha\": \"ae2062778d56d2cf8a52bd5047555ecba3e6b6df\",\n" +
-        "            \"size\": 3351,\n" +
-        "            \"url\": \"https://api.github.com/repos/owner/myrepo/git/blobs/ae2062778d56d2cf8a52bd5047555ecba3e6b6df\"\n" +
-        "        },\n" +
-        "        {\n" +
-        "            \"path\": \"path/to/file/swagger.yml\",\n" +
-        "            \"mode\": \"100644\",\n" +
-        "            \"type\": \"blob\",\n" +
-        "            \"sha\": \"05569e2afcbcb85f461e311b332f4e30cff21a6a\",\n" +
-        "            \"size\": 12,\n" +
-        "            \"url\": \"https://api.github.com/repos/owner/myrepo/git/blobs/05569e2afcbcb85f461e311b332f4e30cff21a6a\"\n" +
-        "        },\n" +
-        "        {\n" +
-        "            \"path\": \"path/to/file/doc.md\",\n" +
-        "            \"mode\": \"100644\",\n" +
-        "            \"type\": \"blob\",\n" +
-        "            \"sha\": \"8f71f43fee3f78649d238238cbde51e6d7055c82\",\n" +
-        "            \"size\": 11358,\n" +
-        "            \"url\": \"https://api.github.com/repos/owner/myrepo/git/blobs/8f71f43fee3f78649d238238cbde51e6d7055c82\"\n" +
-        "        },\n" +
-        "        {\n" +
-        "            \"path\": \"path/to/file/\",\n" +
-        "            \"mode\": \"100644\",\n" +
-        "            \"type\": \"tree\",\n" +
-        "            \"sha\": \"8f71f43fee3f78649d238238cbde51e6d7055c82\",\n" +
-        "            \"size\": 11358,\n" +
-        "            \"url\": \"https://api.github.com/repos/owner/myrepo/git/blobs/8f71f43fee3f78649d238238cbde51e6d7055c82\"\n" +
-        "        },\n" +
-        "        {\n" +
-        "            \"path\": \"path/to/file/doc2.MD\",\n" +
-        "            \"mode\": \"100644\",\n" +
-        "            \"type\": \"blob\",\n" +
-        "            \"sha\": \"8f71f43fee3f78649d238238cbde51e6d7055c82\",\n" +
-        "            \"size\": 11358,\n" +
-        "            \"url\": \"https://api.github.com/repos/owner/myrepo/git/blobs/8f71f43fee3f78649d238238cbde51e6d7055c82\"\n" +
-        "        },\n" +
-        "        {\n" +
-        "            \"path\": \"path/to/file/doc2.UNKNOWN\",\n" +
-        "            \"mode\": \"100644\",\n" +
-        "            \"type\": \"blob\",\n" +
-        "            \"sha\": \"8f71f43fee3f78649d238238cbde51e6d7055c82\",\n" +
-        "            \"size\": 11358,\n" +
-        "            \"url\": \"https://api.github.com/repos/owner/myrepo/git/blobs/8f71f43fee3f78649d238238cbde51e6d7055c82\"\n" +
-        "        },\n" +
-        "        {\n" +
-        "            \"path\": \"path/not/to/file/doc.md\",\n" +
-        "            \"mode\": \"100644\",\n" +
-        "            \"type\": \"blob\",\n" +
-        "            \"sha\": \"8f71f43fee3f78649d238238cbde51e6d7055c82\",\n" +
-        "            \"size\": 11358,\n" +
-        "            \"url\": \"https://api.github.com/repos/owner/myrepo/git/blobs/8f71f43fee3f78649d238238cbde51e6d7055c82\"\n" +
-        "        },\n" +
-        "        {\n" +
-        "            \"path\": \"path/to/file/subpath/\",\n" +
-        "            \"mode\": \"100644\",\n" +
-        "            \"type\": \"tree\",\n" +
-        "            \"sha\": \"e3958323e580277dc7394fa5b148afbb053e0105\",\n" +
-        "            \"size\": 1208,\n" +
-        "            \"url\": \"https://api.github.com/repos/owner/myrepo/git/blobs/e3958323e580277dc7394fa5b148afbb053e0105\"\n" +
-        "        },\n" +
-        "        {\n" +
-        "            \"path\": \"path/to/file/subpath/doc.md\",\n" +
-        "            \"mode\": \"100644\",\n" +
-        "            \"type\": \"blob\",\n" +
-        "            \"sha\": \"e3958323e580277dc7394fa5b148afbb053e0105\",\n" +
-        "            \"size\": 1208,\n" +
-        "            \"url\": \"https://api.github.com/repos/owner/myrepo/git/blobs/e3958323e580277dc7394fa5b148afbb053e0105\"\n" +
-        "        }\n" +
-        "    ],\n" +
-        "    \"truncated\": false" +
-        "}";
+    private final String treeResponse =
+        """
+                    {
+                        "sha": "28bd3de3c32304841eb69d80079ffcc447f9ce6f",
+                        "url": "https://api.github.com/repos/owner/myrepo/git/trees/28bd3de3c32304841eb69d80079ffcc447f9ce6f",
+                        "tree": [
+                            {
+                                "path": ".gitignore",
+                                "mode": "100644",
+                                "type": "blob",
+                                "sha": "a05ec7b1a209b7bc47575bf2fea9b2b4396c0bc4",
+                                "size": 480,
+                                "url": "https://api.github.com/repos/owner/myrepo/git/blobs/a05ec7b1a209b7bc47575bf2fea9b2b4396c0bc4"
+                            },
+                            {
+                                "path": "CONTRIBUTING.md",
+                                "mode": "100644",
+                                "type": "blob",
+                                "sha": "ae2062778d56d2cf8a52bd5047555ecba3e6b6df",
+                                "size": 3351,
+                                "url": "https://api.github.com/repos/owner/myrepo/git/blobs/ae2062778d56d2cf8a52bd5047555ecba3e6b6df"
+                            },
+                            {
+                                "path": "path/to/file/swagger.yml",
+                                "mode": "100644",
+                                "type": "blob",
+                                "sha": "05569e2afcbcb85f461e311b332f4e30cff21a6a",
+                                "size": 12,
+                                "url": "https://api.github.com/repos/owner/myrepo/git/blobs/05569e2afcbcb85f461e311b332f4e30cff21a6a"
+                            },
+                            {
+                                "path": "path/to/file/doc.md",
+                                "mode": "100644",
+                                "type": "blob",
+                                "sha": "8f71f43fee3f78649d238238cbde51e6d7055c82",
+                                "size": 11358,
+                                "url": "https://api.github.com/repos/owner/myrepo/git/blobs/8f71f43fee3f78649d238238cbde51e6d7055c82"
+                            },
+                            {
+                                "path": "path/to/file/",
+                                "mode": "100644",
+                                "type": "tree",
+                                "sha": "8f71f43fee3f78649d238238cbde51e6d7055c82",
+                                "size": 11358,
+                                "url": "https://api.github.com/repos/owner/myrepo/git/blobs/8f71f43fee3f78649d238238cbde51e6d7055c82"
+                            },
+                            {
+                                "path": "path/to/file/doc2.MD",
+                                "mode": "100644",
+                                "type": "blob",
+                                "sha": "8f71f43fee3f78649d238238cbde51e6d7055c82",
+                                "size": 11358,
+                                "url": "https://api.github.com/repos/owner/myrepo/git/blobs/8f71f43fee3f78649d238238cbde51e6d7055c82"
+                            },
+                            {
+                                "path": "path/to/file/doc2.UNKNOWN",
+                                "mode": "100644",
+                                "type": "blob",
+                                "sha": "8f71f43fee3f78649d238238cbde51e6d7055c82",
+                                "size": 11358,
+                                "url": "https://api.github.com/repos/owner/myrepo/git/blobs/8f71f43fee3f78649d238238cbde51e6d7055c82"
+                            },
+                            {
+                                "path": "path/not/to/file/doc.md",
+                                "mode": "100644",
+                                "type": "blob",
+                                "sha": "8f71f43fee3f78649d238238cbde51e6d7055c82",
+                                "size": 11358,
+                                "url": "https://api.github.com/repos/owner/myrepo/git/blobs/8f71f43fee3f78649d238238cbde51e6d7055c82"
+                            },
+                            {
+                                "path": "path/to/file/subpath/",
+                                "mode": "100644",
+                                "type": "tree",
+                                "sha": "e3958323e580277dc7394fa5b148afbb053e0105",
+                                "size": 1208,
+                                "url": "https://api.github.com/repos/owner/myrepo/git/blobs/e3958323e580277dc7394fa5b148afbb053e0105"
+                            },
+                            {
+                                "path": "path/to/file/subpath/doc.md",
+                                "mode": "100644",
+                                "type": "blob",
+                                "sha": "e3958323e580277dc7394fa5b148afbb053e0105",
+                                "size": 1208,
+                                "url": "https://api.github.com/repos/owner/myrepo/git/blobs/e3958323e580277dc7394fa5b148afbb053e0105"
+                            }
+                        ],
+                        "truncated": false\
+                    }""";
 }
