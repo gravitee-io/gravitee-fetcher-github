@@ -1,6 +1,7 @@
 {
+    "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
-    "title": "github",
+    "title": "GitHub",
     "properties": {
         "githubUrl": {
             "title": "GitHub URL",
@@ -23,22 +24,23 @@
         },
         "branchOrTag": {
             "title": "Ref",
-            "description": "Branch name, tag or sha1 (e.g. master). If empty, we use the default branch.",
-            "type": "string"
+            "description": "Branch name, tag or sha1 (e.g. master). Default to master.",
+            "type": "string",
+            "default": "master"
         },
         "filepath": {
             "title": "Filepath",
-            "description": "The path to the file to fetch (e.g. /docs/main/README.md)",
+            "description": "The path to the file to fetch (e.g. /docs/main/README.md). Required if importing a single file.",
             "type": "string"
         },
         "username": {
             "title": "Username",
-            "description": "Username used to authenticate the request",
+            "description": "Username used to authenticate the request. Required if the repository is private.",
             "type": "string"
         },
         "personalAccessToken": {
             "title": "Personal Access Token",
-            "description": "Create your personal access token here: https://github.com/settings/tokens",
+            "description": "Create your personal access token here: https://github.com/settings/tokens. Required if the repository is private.",
             "type": "string"
         },
         "autoFetch": {
@@ -49,7 +51,7 @@
         },
         "fetchCron": {
             "title": "Update frequency",
-            "description": "Define update frequency using Crontab pattern. Note: Platform administrator may have configured a max frequency that you cannot exceed.",
+            "description": "Define update frequency using Crontab pattern. Leaving it empty will not trigger any update. Note: Platform administrator may have configured a max frequency that you cannot exceed.",
             "type": "string",
             "format": "gio-cron",
             "gioConfig": {
@@ -61,11 +63,5 @@
             }
         }
     },
-    "required": ["githubUrl", "owner", "repository"],
-    "if": {
-        "properties": {
-            "autoFetch": { "const": true }
-        }
-    },
-    "then": { "required": ["fetchCron"] }
+    "required": ["githubUrl", "owner", "repository"]
 }
