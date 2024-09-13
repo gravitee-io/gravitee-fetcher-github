@@ -20,10 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import io.gravitee.common.http.HttpStatusCode;
 import io.gravitee.common.utils.UUID;
-import io.gravitee.fetcher.api.FetcherConfiguration;
-import io.gravitee.fetcher.api.FetcherException;
-import io.gravitee.fetcher.api.FilesFetcher;
-import io.gravitee.fetcher.api.Resource;
+import io.gravitee.fetcher.api.*;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
@@ -232,6 +229,9 @@ public class GitHubFetcher implements FilesFetcher {
             return new ObjectMapper().readTree(buffer.getBytes());
         } catch (Exception ex) {
             logger.error(ex.getMessage(), ex);
+            if (ex.getCause() != null && ex.getCause() instanceof ResourceNotFoundException e) {
+                throw e;
+            }
             throw new FetcherException("Unable to fetch GitHub content (" + ex.getMessage() + ")", ex);
         }
     }
@@ -325,6 +325,8 @@ public class GitHubFetcher implements FilesFetcher {
                                             // Close client
                                             httpClient.close();
                                         });
+                                    } else if (response.statusCode() == HttpStatusCode.NOT_FOUND_404) {
+                                        promise.fail(new ResourceNotFoundException("Unable to fetch '" + url, null));
                                     } else {
                                         promise.fail(
                                             new FetcherException(
