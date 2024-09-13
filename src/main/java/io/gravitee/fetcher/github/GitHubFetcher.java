@@ -228,10 +228,11 @@ public class GitHubFetcher implements FilesFetcher {
 
             return new ObjectMapper().readTree(buffer.getBytes());
         } catch (Exception ex) {
-            logger.error(ex.getMessage(), ex);
             if (ex.getCause() != null && ex.getCause() instanceof ResourceNotFoundException e) {
                 throw e;
             }
+
+            logger.error(ex.getMessage(), ex);
             throw new FetcherException("Unable to fetch GitHub content (" + ex.getMessage() + ")", ex);
         }
     }
