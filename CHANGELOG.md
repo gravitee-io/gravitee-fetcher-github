@@ -1,3 +1,10 @@
+## [2.2.1](https://github.com/gravitee-io/gravitee-fetcher-github/compare/2.2.0...2.2.1) (2024-09-13)
+
+
+### Bug Fixes
+
+* do not log ResourceNotFoundException ([1f0d135](https://github.com/gravitee-io/gravitee-fetcher-github/commit/1f0d135e23eb17dd9b9f874f566ba08a8f2f6cc1))
+
 # [2.2.0](https://github.com/gravitee-io/gravitee-fetcher-github/compare/2.1.1...2.2.0) (2024-09-13)
 
 
