@@ -1,3 +1,10 @@
+# [2.2.0](https://github.com/gravitee-io/gravitee-fetcher-github/compare/2.1.1...2.2.0) (2024-09-13)
+
+
+### Features
+
+* add new ResourceNotFoundException ([08c20ad](https://github.com/gravitee-io/gravitee-fetcher-github/commit/08c20adbb569c145f8eeba5307ff2e9f601533c1))
+
 ## [2.1.1](https://github.com/gravitee-io/gravitee-fetcher-github/compare/2.1.0...2.1.1) (2024-09-11)
 
 
