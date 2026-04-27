@@ -102,13 +102,12 @@ public class GitHubFetcher implements FilesFetcher {
             Buffer buffer = fetchContent(getFetchUrl()).join();
             if (buffer == null || buffer.length() == 0) {
                 logger.warn("Something goes wrong, GitHub responds with a status 200 but the content is empty.");
-                return null;
+                return new Resource();
             }
 
             JsonNode jsonNode = mapper.readTree(buffer.getBytes());
             final Resource resource = new Resource();
 
-            // 2. On vérifie le champ "content"
             JsonNode contentNode = jsonNode.get("content");
             if (contentNode != null && !contentNode.asText().isEmpty()) {
                 final String contentAsBase64 = contentNode.asText().replaceAll("\\n", "");
@@ -126,13 +125,14 @@ public class GitHubFetcher implements FilesFetcher {
                 }
             }
 
-            // 3. Construction des métadonnées pour le portail
-            final Map<String, Object> metadata = new HashMap<>();
+            // 3. Build metadata for the portal
+            final Map<String, Object> metadata = mapper.convertValue(jsonNode, Map.class);
+            metadata.remove("content");
             metadata.put(PROVIDER_NAME_PROPERTY_KEY, "GitHub");
 
-            JsonNode htmlUrlNode = jsonNode.get("html_url");
-            if (htmlUrlNode != null) {
-                metadata.put(EDIT_URL_PROPERTY_KEY, htmlUrlNode.asText().replace("blob", "edit"));
+            final Object htmlUrl = metadata.get("html_url");
+            if (htmlUrl != null) {
+                metadata.put(EDIT_URL_PROPERTY_KEY, String.valueOf(htmlUrl).replace("blob", "edit"));
             }
 
             resource.setMetadata(metadata);

@@ -82,9 +82,8 @@ class GitHubFetcher_FetchTest {
         ReflectionTestUtils.setField(fetcher, "gitHubFetcherConfiguration", config);
         ReflectionTestUtils.setField(fetcher, "httpClientTimeout", 10_000);
 
-        // On vérifie directement que le résultat du fetch() est null
-        // plutôt que d'essayer d'appeler .getContent() dessus !
-        assertThat(fetcher.fetch()).isNull();
+        InputStream fetch = fetcher.fetch().getContent();
+        assertThat(fetch).isNull();
     }
 
     @Test
