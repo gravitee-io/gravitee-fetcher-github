@@ -53,7 +53,7 @@ class GitHubFetcher_FetchTest {
     }
 
     @Test
-    public void shouldNotFetchWithoutContent() throws FetcherException {
+    public void shouldThrowExceptionWithoutContent() throws FetcherException {
         wiremock.stubFor(
             get(urlEqualTo("/repos/owner/myrepo/contents/path/to/file?ref=sha1"))
                 .willReturn(aResponse().withStatus(200).withBody("{\"key\": \"value\"}"))
@@ -67,9 +67,7 @@ class GitHubFetcher_FetchTest {
         ReflectionTestUtils.setField(fetcher, "gitHubFetcherConfiguration", config);
         ReflectionTestUtils.setField(fetcher, "httpClientTimeout", 10_000);
 
-        InputStream fetch = fetcher.fetch().getContent();
-
-        assertThat(fetch).isNull();
+        assertThatThrownBy(fetcher::fetch).isInstanceOf(FetcherException.class).hasMessageContaining("No content and no download_url");
     }
 
     @Test
@@ -102,7 +100,7 @@ class GitHubFetcher_FetchTest {
         config.setBranchOrTag("sha1");
         ReflectionTestUtils.setField(fetcher, "gitHubFetcherConfiguration", config);
 
-        assertThatThrownBy(fetcher::fetch).hasMessage("Illegal base64 character 20");
+        assertThatThrownBy(fetcher::fetch).hasMessageContaining("Illegal base64 character 20");
     }
 
     @Test
@@ -131,6 +129,39 @@ class GitHubFetcher_FetchTest {
         fetch.read(bytes, 0, n);
         String decoded = new String(bytes, StandardCharsets.UTF_8);
         assertThat(decoded).isEqualTo(content);
+    }
+
+    @Test
+    public void shouldFetchRawContentWhenBase64IsEmpty() throws Exception {
+        String rawContent = "This is a massive swagger file bypassing the GitHub limit!";
+        String downloadUrlPath = "/raw/owner/myrepo/master/path/to/file";
+        String fullDownloadUrl = wiremock.baseUrl() + downloadUrlPath;
+
+        wiremock.stubFor(
+            get(urlEqualTo("/repos/owner/myrepo/contents/path/to/file?ref=sha1"))
+                .willReturn(aResponse().withStatus(200).withBody("{\"content\": \"\", \"download_url\": \"" + fullDownloadUrl + "\"}"))
+        );
+
+        wiremock.stubFor(get(urlEqualTo(downloadUrlPath)).willReturn(aResponse().withStatus(200).withBody(rawContent)));
+
+        GitHubFetcherConfiguration config = new GitHubFetcherConfiguration();
+        config.setOwner("owner");
+        config.setRepository("myrepo");
+        config.setFilepath("/path/to/file");
+        config.setGithubUrl(wiremock.baseUrl());
+        config.setBranchOrTag("sha1");
+        ReflectionTestUtils.setField(fetcher, "gitHubFetcherConfiguration", config);
+        ReflectionTestUtils.setField(fetcher, "httpClientTimeout", 10_000);
+
+        InputStream fetch = fetcher.fetch().getContent();
+
+        assertThat(fetch).isNotNull();
+        int n = fetch.available();
+        byte[] bytes = new byte[n];
+        fetch.read(bytes, 0, n);
+        String decoded = new String(bytes, StandardCharsets.UTF_8);
+
+        assertThat(decoded).isEqualTo(rawContent);
     }
 
     @Test

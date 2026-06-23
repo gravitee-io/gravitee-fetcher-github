@@ -97,25 +97,53 @@ public class GitHubFetcher implements FilesFetcher {
     @Override
     public Resource fetch() throws FetcherException {
         checkRequiredFields(true);
-        JsonNode jsonNode = this.request(getFetchUrl());
 
-        final Resource resource = new Resource();
-        if (jsonNode != null) {
-            final Map<String, Object> metadata = mapper.convertValue(jsonNode, Map.class);
-            final Object content = metadata.remove("content");
-            if (content != null) {
-                final String contentAsBase64 = String.valueOf(content).replaceAll("\\n", "");
+        try {
+            Buffer buffer = fetchContent(getFetchUrl()).join();
+            if (buffer == null || buffer.length() == 0) {
+                logger.warn("Something goes wrong, GitHub responds with a status 200 but the content is empty.");
+                return new Resource();
+            }
+
+            JsonNode jsonNode = mapper.readTree(buffer.getBytes());
+            final Resource resource = new Resource();
+
+            JsonNode contentNode = jsonNode.get("content");
+            if (contentNode != null && !contentNode.asText().isEmpty()) {
+                final String contentAsBase64 = contentNode.asText().replaceAll("\\n", "");
                 byte[] decodedContent = Base64.getDecoder().decode(contentAsBase64);
                 resource.setContent(new ByteArrayInputStream(decodedContent));
+            } else {
+                JsonNode downloadUrlNode = jsonNode.get("download_url");
+                if (downloadUrlNode != null && !downloadUrlNode.asText().isEmpty()) {
+                    String downloadUrl = downloadUrlNode.asText();
+                    logger.info("File exceeds GitHub API size limit. Falling back to raw download: {}", downloadUrl);
+                    Buffer rawBuffer = fetchContent(downloadUrl).join();
+                    resource.setContent(new ByteArrayInputStream(rawBuffer.getBytes()));
+                } else {
+                    throw new FetcherException("No content and no download_url found in GitHub response.", null);
+                }
             }
+
+            // 3. Build metadata for the portal
+            final Map<String, Object> metadata = mapper.convertValue(jsonNode, Map.class);
+            metadata.remove("content");
+            metadata.put(PROVIDER_NAME_PROPERTY_KEY, "GitHub");
+
             final Object htmlUrl = metadata.get("html_url");
             if (htmlUrl != null) {
                 metadata.put(EDIT_URL_PROPERTY_KEY, String.valueOf(htmlUrl).replace("blob", "edit"));
             }
-            metadata.put(PROVIDER_NAME_PROPERTY_KEY, "GitHub");
+
             resource.setMetadata(metadata);
+            return resource;
+        } catch (Exception ex) {
+            if (ex.getCause() != null && ex.getCause() instanceof ResourceNotFoundException e) {
+                throw e;
+            }
+            logger.error(ex.getMessage(), ex);
+            throw new FetcherException("Unable to fetch GitHub content (" + ex.getMessage() + ")", ex);
         }
-        return resource;
     }
 
     @Override
