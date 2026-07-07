@@ -21,7 +21,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import io.gravitee.common.http.HttpStatusCode;
 import io.gravitee.common.utils.UUID;
 import io.gravitee.fetcher.api.*;
-import io.vertx.core.Handler;
+import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -164,10 +164,8 @@ public class GitHubFetcher implements FilesFetcher {
             gitHubFetcherConfiguration.getOwner().isEmpty() ||
             gitHubFetcherConfiguration.getRepository() == null ||
             gitHubFetcherConfiguration.getRepository().isEmpty() ||
-            (
-                gitHubFetcherConfiguration.isAutoFetch() &&
-                (gitHubFetcherConfiguration.getFetchCron() == null || gitHubFetcherConfiguration.getFetchCron().isEmpty())
-            ) ||
+            (gitHubFetcherConfiguration.isAutoFetch() &&
+                (gitHubFetcherConfiguration.getFetchCron() == null || gitHubFetcherConfiguration.getFetchCron().isEmpty())) ||
             (checkFilepath && (gitHubFetcherConfiguration.getFilepath() == null || gitHubFetcherConfiguration.getFilepath().isEmpty()))
         ) {
             throw new FetcherException("Some required configuration attributes are missing.", null);
@@ -192,11 +190,9 @@ public class GitHubFetcher implements FilesFetcher {
             gitHubFetcherConfiguration.getRepository() +
             "/contents" +
             gitHubFetcherConfiguration.getFilepath() +
-            (
-                gitHubFetcherConfiguration.getBranchOrTag() != null && !gitHubFetcherConfiguration.getBranchOrTag().isEmpty()
+            (gitHubFetcherConfiguration.getBranchOrTag() != null && !gitHubFetcherConfiguration.getBranchOrTag().isEmpty()
                     ? ("?ref=" + gitHubFetcherConfiguration.getBranchOrTag())
-                    : ""
-            )
+                    : "")
         );
     }
 
@@ -209,11 +205,9 @@ public class GitHubFetcher implements FilesFetcher {
             "/" +
             gitHubFetcherConfiguration.getRepository() +
             "/git/trees/" +
-            (
-                gitHubFetcherConfiguration.getBranchOrTag() != null && !gitHubFetcherConfiguration.getBranchOrTag().isEmpty()
+            (gitHubFetcherConfiguration.getBranchOrTag() != null && !gitHubFetcherConfiguration.getBranchOrTag().isEmpty()
                     ? (gitHubFetcherConfiguration.getBranchOrTag())
-                    : "master"
-            ) +
+                    : "master") +
             "?recursive=1"
         );
     }
@@ -246,10 +240,11 @@ public class GitHubFetcher implements FilesFetcher {
         final HttpClientOptions options = new HttpClientOptions()
             .setSsl(ssl)
             .setTrustAll(true)
-            .setMaxPoolSize(1)
             .setKeepAlive(false)
             .setTcpKeepAlive(false)
             .setConnectTimeout(httpClientTimeout);
+
+        final PoolOptions poolOptions = new PoolOptions().setHttp1MaxSize(1);
 
         if (gitHubFetcherConfiguration.isUseSystemProxy()) {
             ProxyOptions proxyOptions = new ProxyOptions();
@@ -268,7 +263,9 @@ public class GitHubFetcher implements FilesFetcher {
             options.setProxyOptions(proxyOptions);
         }
 
-        final HttpClient httpClient = vertx.createHttpClient(options);
+        final HttpClient httpClient = vertx.createHttpClient(options, poolOptions);
+        promise.future().onComplete(ar -> httpClient.close());
+
         final int port = requestUri.getPort() != -1 ? requestUri.getPort() : (HTTPS_SCHEME.equals(requestUri.getScheme()) ? 443 : 80);
 
         try {
@@ -296,72 +293,28 @@ public class GitHubFetcher implements FilesFetcher {
 
             httpClient
                 .request(reqOptions)
-                .onFailure(
-                    new Handler<Throwable>() {
-                        @Override
-                        public void handle(Throwable throwable) {
-                            promise.fail(throwable);
-
-                            // Close client
-                            httpClient.close();
-                        }
+                .compose(HttpClientRequest::send)
+                .compose(response -> {
+                    if (response.statusCode() == HttpStatusCode.OK_200) {
+                        return response.body();
+                    } else if (response.statusCode() == HttpStatusCode.NOT_FOUND_404) {
+                        return Future.failedFuture(new ResourceNotFoundException("Unable to fetch '" + url, null));
+                    } else {
+                        return Future.failedFuture(
+                            new FetcherException(
+                                "Unable to fetch '" +
+                                    url +
+                                    "'. Status code: " +
+                                    response.statusCode() +
+                                    ". Message: " +
+                                    response.statusMessage(),
+                                null
+                            )
+                        );
                     }
-                )
-                .onSuccess(
-                    new Handler<HttpClientRequest>() {
-                        @Override
-                        public void handle(HttpClientRequest request) {
-                            request.response(asyncResponse -> {
-                                if (asyncResponse.failed()) {
-                                    promise.fail(asyncResponse.cause());
-
-                                    // Close client
-                                    httpClient.close();
-                                } else {
-                                    HttpClientResponse response = asyncResponse.result();
-                                    if (response.statusCode() == HttpStatusCode.OK_200) {
-                                        response.bodyHandler(buffer -> {
-                                            promise.complete(buffer);
-
-                                            // Close client
-                                            httpClient.close();
-                                        });
-                                    } else if (response.statusCode() == HttpStatusCode.NOT_FOUND_404) {
-                                        promise.fail(new ResourceNotFoundException("Unable to fetch '" + url, null));
-                                    } else {
-                                        promise.fail(
-                                            new FetcherException(
-                                                "Unable to fetch '" +
-                                                url +
-                                                "'. Status code: " +
-                                                response.statusCode() +
-                                                ". Message: " +
-                                                response.statusMessage(),
-                                                null
-                                            )
-                                        );
-
-                                        // Close client
-                                        httpClient.close();
-                                    }
-                                }
-                            });
-
-                            request.exceptionHandler(throwable -> {
-                                try {
-                                    promise.fail(throwable);
-
-                                    // Close client
-                                    httpClient.close();
-                                } catch (IllegalStateException ise) {
-                                    // Do not take care about exception when closing client
-                                }
-                            });
-
-                            request.end();
-                        }
-                    }
-                );
+                })
+                .onSuccess(promise::complete)
+                .onFailure(promise::fail);
         } catch (Exception ex) {
             logger.error("Unable to fetch content using HTTP", ex);
             promise.fail(ex);

@@ -55,8 +55,9 @@ class GitHubFetcher_FetchTest {
     @Test
     public void shouldNotFetchWithoutContent() throws FetcherException {
         wiremock.stubFor(
-            get(urlEqualTo("/repos/owner/myrepo/contents/path/to/file?ref=sha1"))
-                .willReturn(aResponse().withStatus(200).withBody("{\"key\": \"value\"}"))
+            get(urlEqualTo("/repos/owner/myrepo/contents/path/to/file?ref=sha1")).willReturn(
+                aResponse().withStatus(200).withBody("{\"key\": \"value\"}")
+            )
         );
         GitHubFetcherConfiguration config = new GitHubFetcherConfiguration();
         config.setOwner("owner");
@@ -91,8 +92,9 @@ class GitHubFetcher_FetchTest {
     @Test
     public void shouldThrowExceptionIfContentNotBase64() throws Exception {
         wiremock.stubFor(
-            get(urlEqualTo("/repos/owner/myrepo/contents/path/to/file?ref=sha1"))
-                .willReturn(aResponse().withStatus(200).withBody("{\"content\": \"not base64 content\"}"))
+            get(urlEqualTo("/repos/owner/myrepo/contents/path/to/file?ref=sha1")).willReturn(
+                aResponse().withStatus(200).withBody("{\"content\": \"not base64 content\"}")
+            )
         );
         GitHubFetcherConfiguration config = new GitHubFetcherConfiguration();
         config.setOwner("owner");
@@ -111,8 +113,9 @@ class GitHubFetcher_FetchTest {
         String encoded = Base64.getEncoder().encodeToString(content.getBytes());
 
         wiremock.stubFor(
-            get(urlEqualTo("/repos/owner/myrepo/contents/path/to/file?ref=sha1"))
-                .willReturn(aResponse().withStatus(200).withBody("{\"content\": \"" + encoded + "\"}"))
+            get(urlEqualTo("/repos/owner/myrepo/contents/path/to/file?ref=sha1")).willReturn(
+                aResponse().withStatus(200).withBody("{\"content\": \"" + encoded + "\"}")
+            )
         );
         GitHubFetcherConfiguration config = new GitHubFetcherConfiguration();
         config.setOwner("owner");
@@ -136,8 +139,9 @@ class GitHubFetcher_FetchTest {
     @Test
     public void shouldThrowExceptionWhenStatusNot200() throws Exception {
         wiremock.stubFor(
-            get(urlEqualTo("/repos/owner/myrepo/contents/path/to/file?ref=sha1"))
-                .willReturn(aResponse().withStatus(401).withBody("{\n" + "  \"message\": \"401 Unauthorized\"\n" + "}"))
+            get(urlEqualTo("/repos/owner/myrepo/contents/path/to/file?ref=sha1")).willReturn(
+                aResponse().withStatus(401).withBody("{\n" + "  \"message\": \"401 Unauthorized\"\n" + "}")
+            )
         );
         GitHubFetcherConfiguration config = new GitHubFetcherConfiguration();
         config.setOwner("owner");
