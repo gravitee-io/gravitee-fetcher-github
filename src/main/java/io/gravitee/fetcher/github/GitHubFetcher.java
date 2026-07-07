@@ -32,6 +32,7 @@ import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -221,12 +222,13 @@ public class GitHubFetcher implements FilesFetcher {
 
             return new ObjectMapper().readTree(buffer.getBytes());
         } catch (Exception ex) {
-            if (ex.getCause() != null && ex.getCause() instanceof ResourceNotFoundException e) {
-                throw e;
+            Throwable cause = ex instanceof CompletionException && ex.getCause() != null ? ex.getCause() : ex;
+            if (cause instanceof ResourceNotFoundException resourceNotFoundException) {
+                throw resourceNotFoundException;
             }
 
-            log.error(ex.getMessage(), ex);
-            throw new FetcherException("Unable to fetch GitHub content (" + ex.getMessage() + ")", ex);
+            log.error(cause.getMessage(), cause);
+            throw new FetcherException("Unable to fetch GitHub content (" + cause.getMessage() + ")", cause);
         }
     }
 
@@ -315,7 +317,6 @@ public class GitHubFetcher implements FilesFetcher {
                 .onSuccess(promise::complete)
                 .onFailure(promise::fail);
         } catch (Exception ex) {
-            log.error("Unable to fetch content using HTTP", ex);
             promise.fail(ex);
         }
 
