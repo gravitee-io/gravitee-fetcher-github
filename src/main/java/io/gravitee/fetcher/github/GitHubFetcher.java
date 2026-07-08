@@ -33,6 +33,7 @@ import java.net.URI;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.TimeUnit;
 import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -243,7 +244,9 @@ public class GitHubFetcher implements FilesFetcher {
             .setTrustAll(true)
             .setKeepAlive(false)
             .setTcpKeepAlive(false)
-            .setConnectTimeout(httpClientTimeout);
+            .setConnectTimeout(httpClientTimeout)
+            .setIdleTimeout(httpClientTimeout)
+            .setIdleTimeoutUnit(TimeUnit.MILLISECONDS);
 
         final PoolOptions poolOptions = new PoolOptions().setHttp1MaxSize(1);
 
