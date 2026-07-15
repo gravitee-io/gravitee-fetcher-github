@@ -34,7 +34,7 @@
     <name>Gravitee.io APIM - Fetcher - GitHub</name>
 
     <properties>
-        <gravitee-bom.version>9.0.2</gravitee-bom.version>
+        <gravitee-bom.version>9.0.3</gravitee-bom.version>
         <gravitee-common.version>5.0.0</gravitee-common.version>
         <gravitee-fetcher-api.version>2.1.0</gravitee-fetcher-api.version>
         <gravitee-node.version>9.2.1</gravitee-node.version>
