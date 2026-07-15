@@ -172,7 +172,7 @@ public class GitHubFetcher implements FilesFetcher {
             throw new FetcherException("Some required configuration attributes are missing.", null);
         }
 
-        if (gitHubFetcherConfiguration.isAutoFetch() && gitHubFetcherConfiguration.getFetchCron() != null) {
+        if (gitHubFetcherConfiguration.isAutoFetch()) {
             try {
                 CronExpression.parse(gitHubFetcherConfiguration.getFetchCron());
             } catch (IllegalArgumentException e) {
@@ -298,25 +298,7 @@ public class GitHubFetcher implements FilesFetcher {
             httpClient
                 .request(reqOptions)
                 .compose(HttpClientRequest::send)
-                .compose(response -> {
-                    if (response.statusCode() == HttpStatusCode.OK_200) {
-                        return response.body();
-                    } else if (response.statusCode() == HttpStatusCode.NOT_FOUND_404) {
-                        return Future.failedFuture(new ResourceNotFoundException("Unable to fetch '" + url, null));
-                    } else {
-                        return Future.failedFuture(
-                            new FetcherException(
-                                "Unable to fetch '" +
-                                    url +
-                                    "'. Status code: " +
-                                    response.statusCode() +
-                                    ". Message: " +
-                                    response.statusMessage(),
-                                null
-                            )
-                        );
-                    }
-                })
+                .compose(response -> handleResponse(url, response))
                 .onSuccess(promise::complete)
                 .onFailure(promise::fail);
         } catch (Exception ex) {
@@ -324,6 +306,21 @@ public class GitHubFetcher implements FilesFetcher {
         }
 
         return promise.future().toCompletionStage().toCompletableFuture();
+    }
+
+    private Future<Buffer> handleResponse(String url, HttpClientResponse response) {
+        if (response.statusCode() == HttpStatusCode.OK_200) {
+            return response.body();
+        } else if (response.statusCode() == HttpStatusCode.NOT_FOUND_404) {
+            return Future.failedFuture(new ResourceNotFoundException("Unable to fetch '" + url, null));
+        } else {
+            return Future.failedFuture(
+                new FetcherException(
+                    "Unable to fetch '" + url + "'. Status code: " + response.statusCode() + ". Message: " + response.statusMessage(),
+                    null
+                )
+            );
+        }
     }
 
     public void setVertx(Vertx vertx) {
