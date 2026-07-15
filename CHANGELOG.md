@@ -1,3 +1,21 @@
+# [3.0.0](https://github.com/gravitee-io/gravitee-fetcher-github/compare/2.2.1...3.0.0) (2026-07-15)
+
+
+### Bug Fixes
+
+* fail fetch when the connection stalls while reading the response ([c56722c](https://github.com/gravitee-io/gravitee-fetcher-github/commit/c56722c3a8454a4d55ef41c3e566b410664c7b76))
+* log fetch errors once and unwrap the async exception wrapper ([9e2274d](https://github.com/gravitee-io/gravitee-fetcher-github/commit/9e2274d22561d1e94bb6a160f9a43e4987c35300))
+
+
+### Features
+
+* upgrade to vertx 5 ([333acac](https://github.com/gravitee-io/gravitee-fetcher-github/commit/333acac9401b6861e714cd07e8b130c790922010))
+
+
+### BREAKING CHANGES
+
+* compiled against Vert.x 5 (gravitee-bom 9.x), requires an APIM runtime on Vert.x 5
+
 ## [2.2.1](https://github.com/gravitee-io/gravitee-fetcher-github/compare/2.2.0...2.2.1) (2024-09-13)
 
 
