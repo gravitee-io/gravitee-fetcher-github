@@ -30,7 +30,7 @@
         },
         "filepath": {
             "title": "Filepath",
-            "description": "The path to the file to fetch (e.g. /docs/main/README.md). Required if importing a single file.",
+            "description": "The path to the file to fetch (e.g. docs/main/README.md). Required if importing a single file.",
             "type": "string"
         },
         "username": {
