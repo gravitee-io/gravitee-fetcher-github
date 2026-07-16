@@ -132,10 +132,7 @@ public class GitHubFetcher implements FilesFetcher {
             if (truncated != null && !truncated.asBoolean(false)) {
                 JsonNode rawTree = jsonNode.get("tree");
                 if (rawTree != null && rawTree.isArray()) {
-                    String filepath = gitHubFetcherConfiguration.getFilepath().trim();
-                    if (filepath.startsWith("/")) {
-                        filepath = filepath.replaceFirst("/", "");
-                    }
+                    String filepath = normalizeFilepath(gitHubFetcherConfiguration.getFilepath());
                     ArrayNode tree = (ArrayNode) rawTree;
                     Iterator<JsonNode> elements = tree.elements();
                     while (elements.hasNext()) {
@@ -189,11 +186,34 @@ public class GitHubFetcher implements FilesFetcher {
             gitHubFetcherConfiguration.getOwner() +
             "/" +
             gitHubFetcherConfiguration.getRepository() +
-            "/contents" +
-            gitHubFetcherConfiguration.getFilepath() +
+            "/contents/" +
+            normalizeFilepath(gitHubFetcherConfiguration.getFilepath()) +
             (gitHubFetcherConfiguration.getBranchOrTag() != null && !gitHubFetcherConfiguration.getBranchOrTag().isEmpty()
                     ? ("?ref=" + gitHubFetcherConfiguration.getBranchOrTag())
                     : "")
+        );
+    }
+
+    /** Accepts both filepath forms (with or without leading slash); never persisted back to the configuration. */
+    private static String normalizeFilepath(String filepath) {
+        return filepath == null ? "" : filepath.trim().replaceAll("^/+", "");
+    }
+
+    private String buildNotFoundMessage(String url) {
+        String ref = gitHubFetcherConfiguration.getBranchOrTag() != null && !gitHubFetcherConfiguration.getBranchOrTag().isEmpty()
+            ? gitHubFetcherConfiguration.getBranchOrTag()
+            : "master";
+        return (
+            "Unable to fetch file '" +
+            gitHubFetcherConfiguration.getFilepath() +
+            "' from GitHub repository '" +
+            gitHubFetcherConfiguration.getOwner() +
+            "/" +
+            gitHubFetcherConfiguration.getRepository() +
+            "' (ref: " +
+            ref +
+            "): resource not found. Requested URL: " +
+            url
         );
     }
 
@@ -312,7 +332,7 @@ public class GitHubFetcher implements FilesFetcher {
         if (response.statusCode() == HttpStatusCode.OK_200) {
             return response.body();
         } else if (response.statusCode() == HttpStatusCode.NOT_FOUND_404) {
-            return Future.failedFuture(new ResourceNotFoundException("Unable to fetch '" + url, null));
+            return Future.failedFuture(new ResourceNotFoundException(buildNotFoundMessage(url), null));
         } else {
             return Future.failedFuture(
                 new FetcherException(
