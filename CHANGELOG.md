@@ -1,3 +1,10 @@
+## [3.0.1](https://github.com/gravitee-io/gravitee-fetcher-github/compare/3.0.0...3.0.1) (2026-07-20)
+
+
+### Bug Fixes
+
+* normalize filepath and clarify not-found error ([c9948cc](https://github.com/gravitee-io/gravitee-fetcher-github/commit/c9948cc703a531e4809810dfc43bbb676b4d8e68))
+
 # [3.0.0](https://github.com/gravitee-io/gravitee-fetcher-github/compare/2.2.1...3.0.0) (2026-07-15)
 
 
