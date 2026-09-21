@@ -164,10 +164,8 @@ public class GitHubFetcher implements FilesFetcher {
             gitHubFetcherConfiguration.getOwner().isEmpty() ||
             gitHubFetcherConfiguration.getRepository() == null ||
             gitHubFetcherConfiguration.getRepository().isEmpty() ||
-            (
-                gitHubFetcherConfiguration.isAutoFetch() &&
-                (gitHubFetcherConfiguration.getFetchCron() == null || gitHubFetcherConfiguration.getFetchCron().isEmpty())
-            ) ||
+            (gitHubFetcherConfiguration.isAutoFetch() &&
+                (gitHubFetcherConfiguration.getFetchCron() == null || gitHubFetcherConfiguration.getFetchCron().isEmpty())) ||
             (checkFilepath && (gitHubFetcherConfiguration.getFilepath() == null || gitHubFetcherConfiguration.getFilepath().isEmpty()))
         ) {
             throw new FetcherException("Some required configuration attributes are missing.", null);
@@ -192,11 +190,9 @@ public class GitHubFetcher implements FilesFetcher {
             gitHubFetcherConfiguration.getRepository() +
             "/contents" +
             gitHubFetcherConfiguration.getFilepath() +
-            (
-                gitHubFetcherConfiguration.getBranchOrTag() != null && !gitHubFetcherConfiguration.getBranchOrTag().isEmpty()
+            (gitHubFetcherConfiguration.getBranchOrTag() != null && !gitHubFetcherConfiguration.getBranchOrTag().isEmpty()
                     ? ("?ref=" + gitHubFetcherConfiguration.getBranchOrTag())
-                    : ""
-            )
+                    : "")
         );
     }
 
@@ -209,11 +205,9 @@ public class GitHubFetcher implements FilesFetcher {
             "/" +
             gitHubFetcherConfiguration.getRepository() +
             "/git/trees/" +
-            (
-                gitHubFetcherConfiguration.getBranchOrTag() != null && !gitHubFetcherConfiguration.getBranchOrTag().isEmpty()
+            (gitHubFetcherConfiguration.getBranchOrTag() != null && !gitHubFetcherConfiguration.getBranchOrTag().isEmpty()
                     ? (gitHubFetcherConfiguration.getBranchOrTag())
-                    : "master"
-            ) +
+                    : "master") +
             "?recursive=1"
         );
     }
@@ -332,11 +326,11 @@ public class GitHubFetcher implements FilesFetcher {
                                         promise.fail(
                                             new FetcherException(
                                                 "Unable to fetch '" +
-                                                url +
-                                                "'. Status code: " +
-                                                response.statusCode() +
-                                                ". Message: " +
-                                                response.statusMessage(),
+                                                    url +
+                                                    "'. Status code: " +
+                                                    response.statusCode() +
+                                                    ". Message: " +
+                                                    response.statusMessage(),
                                                 null
                                             )
                                         );
