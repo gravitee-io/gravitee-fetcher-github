@@ -273,7 +273,7 @@ public class GitHubFetcher implements FilesFetcher {
 
         Proxy proxy = null;
         if (gitHubFetcherConfiguration.isUseSystemProxy()) {
-            proxy = HTTPS_SCHEME.equals(requestUri.getScheme())
+            proxy = ssl
                 ? new Proxy(
                     httpClientProxyType,
                     httpClientProxyHttpsHost,
@@ -295,7 +295,7 @@ public class GitHubFetcher implements FilesFetcher {
             GitHubFetcher::buildHttpClient
         );
 
-        final int port = requestUri.getPort() != -1 ? requestUri.getPort() : (HTTPS_SCHEME.equals(requestUri.getScheme()) ? 443 : 80);
+        final int port = requestUri.getPort() != -1 ? requestUri.getPort() : (ssl ? 443 : 80);
 
         try {
             final RequestOptions reqOptions = new RequestOptions()
