@@ -1,3 +1,12 @@
+## [3.0.2](https://github.com/gravitee-io/gravitee-fetcher-github/compare/3.0.1...3.0.2) (2026-10-21)
+
+
+### Bug Fixes
+
+* pick the HTTPS proxy and port for any case of the https scheme ([09ee221](https://github.com/gravitee-io/gravitee-fetcher-github/commit/09ee2217894e3a82753dc6562e9fb9bdffeb0bdf))
+* reset the request of a non-200 response to free its pooled connection ([925638f](https://github.com/gravitee-io/gravitee-fetcher-github/commit/925638f0a3089ade07c34ebdfb648d987b4bc02d))
+* reuse one Vert.x HTTP client across fetches ([6d8a0a3](https://github.com/gravitee-io/gravitee-fetcher-github/commit/6d8a0a33d3440631fcefe9809483837e290717d8))
+
 ## [3.0.1](https://github.com/gravitee-io/gravitee-fetcher-github/compare/3.0.0...3.0.1) (2026-07-20)
 
 
