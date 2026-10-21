@@ -1,0 +1,126 @@
+/*
+ * Copyright © 2015 The Gravitee team (http://gravitee.io)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.gravitee.fetcher.github;
+
+import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import io.gravitee.fetcher.api.FetcherException;
+import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpClient;
+import io.vertx.core.internal.VertxInternal;
+import java.lang.reflect.Field;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.springframework.test.util.ReflectionTestUtils;
+
+class GitHubFetcher_HttpClientTest {
+
+    @RegisterExtension
+    static WireMockExtension wiremock = WireMockExtension.newInstance().options(wireMockConfig().dynamicPort()).build();
+
+    private Vertx vertx;
+
+    @BeforeEach
+    void setUp() {
+        vertx = Vertx.vertx();
+        wiremock.stubFor(
+            get(urlEqualTo("/repos/owner/myrepo/contents/path/to/file?ref=sha1")).willReturn(
+                aResponse().withStatus(200).withBody("{\"content\": \"b2s=\"}")
+            )
+        );
+        wiremock.stubFor(
+            get(urlEqualTo("/repos/owner/myrepo/git/trees/sha1?recursive=1")).willReturn(
+                aResponse().withStatus(200).withBody("{\"truncated\": false, \"tree\": []}")
+            )
+        );
+        wiremock.stubFor(get(urlEqualTo("/repos/owner/myrepo/contents/missing?ref=sha1")).willReturn(aResponse().withStatus(404)));
+    }
+
+    @AfterEach
+    void tearDown() throws Exception {
+        vertx.close().toCompletionStage().toCompletableFuture().get(10, TimeUnit.SECONDS);
+    }
+
+    @Test
+    void should_reuse_one_http_client_across_fetches() throws Exception {
+        for (int i = 0; i < 10; i++) {
+            fetcher("/path/to/file", 10_000).fetch();
+            fetcher("/path/to/file", 10_000).files();
+            assertThatThrownBy(fetcher("/missing", 10_000)::fetch).isInstanceOf(FetcherException.class);
+        }
+
+        assertThat(registeredHttpClients()).isEqualTo(1);
+    }
+
+    @Test
+    void should_not_share_a_client_between_fetches_with_and_without_system_proxy() throws Exception {
+        fetcher("/path/to/file", 10_000).fetch();
+
+        GitHubFetcher proxied = fetcher("/path/to/file", 10_000);
+        ((GitHubFetcherConfiguration) proxied.getConfiguration()).setUseSystemProxy(true);
+        ReflectionTestUtils.setField(proxied, "httpClientProxyType", "HTTP");
+        ReflectionTestUtils.setField(proxied, "httpClientProxyHttpHost", "localhost");
+        // Nothing listens there: the fetch fails, but only after its client has been built.
+        ReflectionTestUtils.setField(proxied, "httpClientProxyHttpPort", 1);
+        assertThatThrownBy(proxied::fetch).isInstanceOf(FetcherException.class);
+
+        assertThat(registeredHttpClients()).isEqualTo(2);
+    }
+
+    @Test
+    void should_not_share_a_client_between_fetches_with_different_timeouts() throws Exception {
+        fetcher("/path/to/file", 10_000).fetch();
+        fetcher("/path/to/file", 5_000).fetch();
+
+        assertThat(registeredHttpClients()).isEqualTo(2);
+    }
+
+    /**
+     * Vert.x keeps every client it creates in the private {@code children} map of its owner's close future, and
+     * only releases them when that owner closes. Counting them is the only way to observe from a test that a
+     * client is retained for the whole life of the node rather than released after the call that created it.
+     */
+    private long registeredHttpClients() throws Exception {
+        Object closeFuture = ((VertxInternal) vertx).closeFuture();
+        Field childrenField = closeFuture.getClass().getDeclaredField("children");
+        childrenField.setAccessible(true);
+        Map<?, ?> children = (Map<?, ?>) childrenField.get(closeFuture);
+        return children == null ? 0 : children.keySet().stream().filter(HttpClient.class::isInstance).count();
+    }
+
+    private GitHubFetcher fetcher(String filepath, int timeoutMs) {
+        GitHubFetcherConfiguration config = new GitHubFetcherConfiguration();
+        config.setOwner("owner");
+        config.setRepository("myrepo");
+        config.setFilepath(filepath);
+        config.setGithubUrl(wiremock.baseUrl());
+        config.setBranchOrTag("sha1");
+        GitHubFetcher fetcher = new GitHubFetcher(config);
+        ReflectionTestUtils.setField(fetcher, "httpClientTimeout", timeoutMs);
+        ReflectionTestUtils.setField(fetcher, "mapper", new ObjectMapper());
+        fetcher.setVertx(vertx);
+        return fetcher;
+    }
+}
