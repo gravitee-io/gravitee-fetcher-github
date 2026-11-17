@@ -1,3 +1,10 @@
+## [2.2.3](https://github.com/gravitee-io/gravitee-fetcher-github/compare/2.2.2...2.2.3) (2026-11-17)
+
+
+### Bug Fixes
+
+* publish releases to Artifactory with the gravitee orb 4.24.1 ([a0cadc7](https://github.com/gravitee-io/gravitee-fetcher-github/commit/a0cadc738ffaa46455e6ed15e7589e4645fd0e5e))
+
 ## [2.2.2](https://github.com/gravitee-io/gravitee-fetcher-github/compare/2.2.1...2.2.2) (2026-11-17)
 
 
