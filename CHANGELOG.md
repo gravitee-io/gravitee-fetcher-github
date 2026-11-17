@@ -1,3 +1,10 @@
+## [2.2.2](https://github.com/gravitee-io/gravitee-fetcher-github/compare/2.2.1...2.2.2) (2026-11-17)
+
+
+### Bug Fixes
+
+* fetch files larger than 1 MB through the raw media type ([9324894](https://github.com/gravitee-io/gravitee-fetcher-github/commit/93248949b008a621a21115dce5d999371b4d8317))
+
 ## [2.2.1](https://github.com/gravitee-io/gravitee-fetcher-github/compare/2.2.0...2.2.1) (2024-09-13)
 
 
