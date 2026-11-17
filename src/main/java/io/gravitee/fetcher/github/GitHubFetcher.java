@@ -47,6 +47,8 @@ public class GitHubFetcher implements FilesFetcher {
     private static final Logger logger = LoggerFactory.getLogger(GitHubFetcher.class);
     private static final String HTTPS_SCHEME = "https";
     private static final String VERSION_HEADER = "application/vnd.github.v3+json";
+    // GitHub leaves "content" empty with encoding "none" above 1 MB; the raw media type serves files up to 100 MB.
+    private static final String RAW_HEADER = "application/vnd.github.v3.raw";
     private GitHubFetcherConfiguration gitHubFetcherConfiguration;
 
     @Autowired
@@ -103,7 +105,9 @@ public class GitHubFetcher implements FilesFetcher {
         if (jsonNode != null) {
             final Map<String, Object> metadata = mapper.convertValue(jsonNode, Map.class);
             final Object content = metadata.remove("content");
-            if (content != null) {
+            if ("none".equals(metadata.get("encoding"))) {
+                resource.setContent(new ByteArrayInputStream(this.requestBytes(getFetchUrl(), RAW_HEADER).getBytes()));
+            } else if (content != null) {
                 final String contentAsBase64 = String.valueOf(content).replaceAll("\\n", "");
                 byte[] decodedContent = Base64.getDecoder().decode(contentAsBase64);
                 resource.setContent(new ByteArrayInputStream(decodedContent));
@@ -213,14 +217,23 @@ public class GitHubFetcher implements FilesFetcher {
     }
 
     private JsonNode request(String url) throws FetcherException {
-        try {
-            Buffer buffer = fetchContent(url).join();
-            if (buffer == null || buffer.length() == 0) {
-                logger.warn("Something goes wrong, GitHub responds with a status 200 but the content is empty.");
-                return null;
-            }
+        Buffer buffer = requestBytes(url, VERSION_HEADER);
+        if (buffer == null || buffer.length() == 0) {
+            logger.warn("Something goes wrong, GitHub responds with a status 200 but the content is empty.");
+            return null;
+        }
 
+        try {
             return new ObjectMapper().readTree(buffer.getBytes());
+        } catch (Exception ex) {
+            logger.error(ex.getMessage(), ex);
+            throw new FetcherException("Unable to fetch GitHub content (" + ex.getMessage() + ")", ex);
+        }
+    }
+
+    private Buffer requestBytes(String url, String accept) throws FetcherException {
+        try {
+            return fetchContent(url, accept).join();
         } catch (Exception ex) {
             if (ex.getCause() != null && ex.getCause() instanceof ResourceNotFoundException e) {
                 throw e;
@@ -231,7 +244,7 @@ public class GitHubFetcher implements FilesFetcher {
         }
     }
 
-    private CompletableFuture<Buffer> fetchContent(String url) throws Exception {
+    private CompletableFuture<Buffer> fetchContent(String url, String accept) throws Exception {
         Promise<Buffer> promise = Promise.promise();
 
         URI requestUri = URI.create(url);
@@ -273,7 +286,7 @@ public class GitHubFetcher implements FilesFetcher {
                 .setURI(requestUri.toString())
                 .putHeader(io.gravitee.common.http.HttpHeaders.USER_AGENT, gitHubFetcherConfiguration.getOwner())
                 .putHeader("X-Gravitee-Request-Id", UUID.toString(UUID.random()))
-                .putHeader("Accept", VERSION_HEADER)
+                .putHeader("Accept", accept)
                 .setTimeout(httpClientTimeout)
                 // Follow redirect since Gitlab may return a 3xx status code
                 .setFollowRedirects(true);
